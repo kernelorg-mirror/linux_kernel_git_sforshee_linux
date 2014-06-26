@@ -243,9 +243,12 @@ static int fuse_dentry_revalidate(struct dentry *entry, unsigned int flags)
 		if (ret || (outarg.attr.mode ^ inode->i_mode) & S_IFMT)
 			goto invalid;
 
-		fuse_change_attributes(inode, &outarg.attr,
-				       entry_attr_timeout(&outarg),
-				       attr_version);
+		ret = fuse_change_attributes(inode, &outarg.attr,
+					     entry_attr_timeout(&outarg),
+					     attr_version);
+		if (ret)
+			goto invalid;
+
 		fuse_change_entry_timeout(entry, &outarg);
 	} else if (inode) {
 		fi = get_fuse_inode(inode);
@@ -319,8 +322,9 @@ int fuse_lookup_name(struct super_block *sb, u64 nodeid, struct qstr *name,
 	*inode = fuse_iget(sb, outarg->nodeid, outarg->generation,
 			   &outarg->attr, entry_attr_timeout(outarg),
 			   attr_version);
-	err = -ENOMEM;
-	if (!*inode) {
+	if (IS_ERR(*inode)) {
+		err = PTR_ERR(*inode);
+		*inode = NULL;
 		fuse_queue_forget(fc, forget, outarg->nodeid, 1);
 		goto out;
 	}
@@ -441,11 +445,11 @@ static int fuse_create_open(struct inode *dir, struct dentry *entry,
 	ff->open_flags = outopen.open_flags;
 	inode = fuse_iget(dir->i_sb, outentry.nodeid, outentry.generation,
 			  &outentry.attr, entry_attr_timeout(&outentry), 0);
-	if (!inode) {
+	if (IS_ERR(inode)) {
 		flags &= ~(O_CREAT | O_EXCL | O_TRUNC);
 		fuse_sync_release(ff, flags);
 		fuse_queue_forget(fc, forget, outentry.nodeid, 1);
-		err = -ENOMEM;
+		err = PTR_ERR(inode);
 		goto out_err;
 	}
 	kfree(forget);
@@ -547,9 +551,9 @@ static int create_new_entry(struct fuse_conn *fc, struct fuse_args *args,
 
 	inode = fuse_iget(dir->i_sb, outarg.nodeid, outarg.generation,
 			  &outarg.attr, entry_attr_timeout(&outarg), 0);
-	if (!inode) {
+	if (IS_ERR(inode)) {
 		fuse_queue_forget(fc, forget, outarg.nodeid, 1);
-		return -ENOMEM;
+		return PTR_ERR(inode);
 	}
 	kfree(forget);
 
@@ -841,8 +845,8 @@ static void fuse_fillattr(struct inode *inode, struct fuse_attr *attr,
 	stat->ino = attr->ino;
 	stat->mode = (inode->i_mode & S_IFMT) | (attr->mode & 07777);
 	stat->nlink = attr->nlink;
-	stat->uid = make_kuid(&init_user_ns, attr->uid);
-	stat->gid = make_kgid(&init_user_ns, attr->gid);
+	stat->uid = inode->i_uid;
+	stat->gid = inode->i_gid;
 	stat->rdev = inode->i_rdev;
 	stat->atime.tv_sec = attr->atime;
 	stat->atime.tv_nsec = attr->atimensec;
@@ -896,10 +900,10 @@ static int fuse_do_getattr(struct inode *inode, struct kstat *stat,
 			make_bad_inode(inode);
 			err = -EIO;
 		} else {
-			fuse_change_attributes(inode, &outarg.attr,
-					       attr_timeout(&outarg),
-					       attr_version);
-			if (stat)
+			err = fuse_change_attributes(inode, &outarg.attr,
+						     attr_timeout(&outarg),
+						     attr_version);
+			if (!err && stat)
 				fuse_fillattr(inode, &outarg.attr, stat);
 		}
 	}
@@ -1221,9 +1225,11 @@ static int fuse_direntplus_link(struct file *file,
 			fi->nlookup++;
 			spin_unlock(&fc->lock);
 
-			fuse_change_attributes(inode, &o->attr,
-					       entry_attr_timeout(o),
-					       attr_version);
+			err = fuse_change_attributes(inode, &o->attr,
+						     entry_attr_timeout(o),
+						     attr_version);
+			if (err)
+				goto out;
 
 			/*
 			 * The other branch to 'found' comes via fuse_iget()
@@ -1241,8 +1247,10 @@ static int fuse_direntplus_link(struct file *file,
 
 	inode = fuse_iget(dir->i_sb, o->nodeid, o->generation,
 			  &o->attr, entry_attr_timeout(o), attr_version);
-	if (!inode)
+	if (IS_ERR(inode)) {
+		err = PTR_ERR(inode);
 		goto out;
+	}
 
 	alias = d_splice_alias(inode, dentry);
 	err = PTR_ERR(alias);
@@ -1455,17 +1463,25 @@ static bool update_mtime(unsigned ivalid, bool trust_local_mtime)
 	return true;
 }
 
-static void iattr_to_fattr(struct iattr *iattr, struct fuse_setattr_in *arg,
-			   bool trust_local_cmtime)
+static int iattr_to_fattr(struct fuse_conn *fc, struct iattr *iattr,
+			   struct fuse_setattr_in *arg, bool trust_local_cmtime)
 {
 	unsigned ivalid = iattr->ia_valid;
 
 	if (ivalid & ATTR_MODE)
 		arg->valid |= FATTR_MODE,   arg->mode = iattr->ia_mode;
-	if (ivalid & ATTR_UID)
-		arg->valid |= FATTR_UID,    arg->uid = from_kuid(&init_user_ns, iattr->ia_uid);
-	if (ivalid & ATTR_GID)
-		arg->valid |= FATTR_GID,    arg->gid = from_kgid(&init_user_ns, iattr->ia_gid);
+	if (ivalid & ATTR_UID) {
+		arg->uid = from_kuid(fc->user_ns, iattr->ia_uid);
+		if (arg->uid == (uid_t)-1)
+			return -EINVAL;
+		arg->valid |= FATTR_UID;
+	}
+	if (ivalid & ATTR_GID) {
+		arg->gid = from_kgid(fc->user_ns, iattr->ia_gid);
+		if (arg->gid == (gid_t)-1)
+			return -EINVAL;
+		arg->valid |= FATTR_GID;
+	}
 	if (ivalid & ATTR_SIZE)
 		arg->valid |= FATTR_SIZE,   arg->size = iattr->ia_size;
 	if (ivalid & ATTR_ATIME) {
@@ -1487,6 +1503,8 @@ static void iattr_to_fattr(struct iattr *iattr, struct fuse_setattr_in *arg,
 		arg->ctime = iattr->ia_ctime.tv_sec;
 		arg->ctimensec = iattr->ia_ctime.tv_nsec;
 	}
+
+	return 0;
 }
 
 /*
@@ -1625,7 +1643,9 @@ int fuse_do_setattr(struct inode *inode, struct iattr *attr,
 
 	memset(&inarg, 0, sizeof(inarg));
 	memset(&outarg, 0, sizeof(outarg));
-	iattr_to_fattr(attr, &inarg, trust_local_cmtime);
+	err = iattr_to_fattr(fc, attr, &inarg, trust_local_cmtime);
+	if (err)
+		goto error;
 	if (file) {
 		struct fuse_file *ff = file->private_data;
 		inarg.valid |= FATTR_FH;
@@ -1660,8 +1680,13 @@ int fuse_do_setattr(struct inode *inode, struct iattr *attr,
 		/* FIXME: clear I_DIRTY_SYNC? */
 	}
 
-	fuse_change_attributes_common(inode, &outarg.attr,
-				      attr_timeout(&outarg));
+	err = fuse_change_attributes_common(inode, &outarg.attr,
+				            attr_timeout(&outarg));
+	if (err) {
+		spin_unlock(&fc->lock);
+		goto error;
+	}
+
 	oldsize = inode->i_size;
 	/* see the comment in fuse_change_attributes() */
 	if (!is_wb || is_truncate || !S_ISREG(inode->i_mode))
