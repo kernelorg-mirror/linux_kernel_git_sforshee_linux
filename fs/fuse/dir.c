@@ -1018,8 +1018,14 @@ int fuse_allow_current_process(struct fuse_conn *fc)
 {
 	const struct cred *cred;
 
-	if (fc->flags & FUSE_ALLOW_OTHER)
-		return 1;
+	if (fc->flags & FUSE_ALLOW_OTHER) {
+		struct user_namespace *ns;
+		for (ns = current_user_ns(); ns; ns = ns->parent) {
+			if (ns == fc->user_ns)
+				return 1;
+		}
+		return 0;
+	}
 
 	cred = current_cred();
 	if (uid_eq(cred->euid, fc->user_id) &&
