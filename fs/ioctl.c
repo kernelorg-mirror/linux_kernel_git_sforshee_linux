@@ -55,7 +55,7 @@ static int ioctl_fibmap(struct file *filp, int __user *p)
 	/* do we support this mess? */
 	if (!mapping->a_ops->bmap)
 		return -EINVAL;
-	if (!capable(CAP_SYS_RAWIO))
+	if (!ns_capable(filp->f_inode->i_sb->s_user_ns, CAP_SYS_RAWIO))
 		return -EPERM;
 	res = get_user(block, p);
 	if (res)
