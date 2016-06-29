@@ -13,6 +13,9 @@
 #include <linux/sched.h>
 #include <linux/namei.h>
 #include <linux/slab.h>
+#include <linux/xattr.h>
+#include <linux/posix_acl.h>
+#include <linux/posix_acl_xattr.h>
 
 static bool fuse_use_readdirplus(struct inode *dir, struct dir_context *ctx)
 {
@@ -243,6 +246,7 @@ static int fuse_dentry_revalidate(struct dentry *entry, unsigned int flags)
 		if (ret || (outarg.attr.mode ^ inode->i_mode) & S_IFMT)
 			goto invalid;
 
+		forget_all_cached_acls(inode);
 		fuse_change_attributes(inode, &outarg.attr,
 				       entry_attr_timeout(&outarg),
 				       attr_version);
@@ -915,6 +919,7 @@ int fuse_update_attributes(struct inode *inode, struct kstat *stat,
 
 	if (time_before64(fi->i_time, get_jiffies_64())) {
 		r = true;
+		forget_all_cached_acls(inode);
 		err = fuse_do_getattr(inode, stat, file);
 	} else {
 		r = false;
@@ -1061,6 +1066,7 @@ static int fuse_perm_getattr(struct inode *inode, int mask)
 	if (mask & MAY_NOT_BLOCK)
 		return -ECHILD;
 
+	forget_all_cached_acls(inode);
 	return fuse_do_getattr(inode, NULL, NULL);
 }
 
@@ -1230,6 +1236,7 @@ retry:
 		fi->nlookup++;
 		spin_unlock(&fc->lock);
 
+		forget_all_cached_acls(inode);
 		fuse_change_attributes(inode, &o->attr,
 				       entry_attr_timeout(o),
 				       attr_version);
@@ -1697,14 +1704,19 @@ error:
 static int fuse_setattr(struct dentry *entry, struct iattr *attr)
 {
 	struct inode *inode = d_inode(entry);
+	int ret;
 
 	if (!fuse_allow_current_process(get_fuse_conn(inode)))
 		return -EACCES;
 
 	if (attr->ia_valid & ATTR_FILE)
-		return fuse_do_setattr(inode, attr, attr->ia_file);
+		ret = fuse_do_setattr(inode, attr, attr->ia_file);
 	else
-		return fuse_do_setattr(inode, attr, NULL);
+		ret = fuse_do_setattr(inode, attr, NULL);
+
+	if (!ret && (attr->ia_valid & ATTR_MODE))
+		ret = posix_acl_chmod(inode, inode->i_mode);
+	return ret;
 }
 
 static int fuse_getattr(struct vfsmount *mnt, struct dentry *entry,
@@ -1719,9 +1731,8 @@ static int fuse_getattr(struct vfsmount *mnt, struct dentry *entry,
 	return fuse_update_attributes(inode, stat, NULL, NULL);
 }
 
-static int fuse_setxattr(struct dentry *unused, struct inode *inode,
-			 const char *name, const void *value,
-			 size_t size, int flags)
+static int fuse_setxattr(struct inode *inode, const char *name,
+			 const void *value, size_t size, int flags)
 {
 	struct fuse_conn *fc = get_fuse_conn(inode);
 	FUSE_ARGS(args);
@@ -1755,8 +1766,8 @@ static int fuse_setxattr(struct dentry *unused, struct inode *inode,
 	return err;
 }
 
-static ssize_t fuse_getxattr(struct dentry *entry, struct inode *inode,
-			     const char *name, void *value, size_t size)
+static ssize_t fuse_getxattr(struct inode *inode, const char *name,
+			     void *value, size_t size)
 {
 	struct fuse_conn *fc = get_fuse_conn(inode);
 	FUSE_ARGS(args);
@@ -1838,9 +1849,8 @@ static ssize_t fuse_listxattr(struct dentry *entry, char *list, size_t size)
 	return ret;
 }
 
-static int fuse_removexattr(struct dentry *entry, const char *name)
+static int fuse_removexattr(struct inode *inode, const char *name)
 {
-	struct inode *inode = d_inode(entry);
 	struct fuse_conn *fc = get_fuse_conn(inode);
 	FUSE_ARGS(args);
 	int err;
@@ -1865,6 +1875,153 @@ static int fuse_removexattr(struct dentry *entry, const char *name)
 	return err;
 }
 
+static int fuse_xattr_get(const struct xattr_handler *handler,
+			  struct dentry *dentry, struct inode *inode,
+			  const char *name, void *value, size_t size)
+{
+	return fuse_getxattr(inode, name, value, size);
+}
+
+static int fuse_xattr_set(const struct xattr_handler *handler,
+			  struct dentry *dentry, struct inode *inode,
+			  const char *name, const void *value, size_t size,
+			  int flags)
+{
+	if (!value)
+		return fuse_removexattr(inode, name);
+
+	return fuse_setxattr(inode, name, value, size, flags);
+}
+
+static const struct xattr_handler fuse_xattr_handler = {
+	.prefix	= "",
+	.get	= fuse_xattr_get,
+	.set	= fuse_xattr_set,
+};
+
+#ifndef CONFIG_POSIX_ACL
+static int fuse_xattr_acl_get(const struct xattr_handler *handler,
+			      struct dentry *dentry, struct inode *inode,
+			      const char *name, void *value, size_t size)
+{
+	return -EOPNOTSUPP;
+}
+
+static int fuse_xattr_acl_set(const struct xattr_handler *handler,
+				struct dentry *dentry, struct inode *inode,
+				const char *name, const void *value, size_t size,
+				int flags)
+{
+	return -EOPNOTSUPP;
+}
+
+static const struct xattr_handler fuse_xattr_acl_access_handler = {
+	.name	= XATTR_NAME_POSIX_ACL_ACCESS,
+	.get	= fuse_xattr_acl_get,
+	.set	= fuse_xattr_acl_set,
+};
+
+static const struct xattr_handler fuse_xattr_acl_default_handler = {
+	.name	= XATTR_NAME_POSIX_ACL_DEFAULT,
+	.get	= fuse_xattr_acl_get,
+	.set	= fuse_xattr_acl_set,
+};
+#endif /* CONFIG_POSIX_ACL */
+
+const struct xattr_handler *fuse_xattr_handlers[] = {
+#ifdef CONFIG_FS_POSIX_ACL
+	&posix_acl_access_xattr_handler,
+	&posix_acl_default_xattr_handler,
+#else
+	&fuse_xattr_acl_access_handler,
+	&fuse_xattr_acl_default_handler,
+#endif
+	&fuse_xattr_handler,
+};
+
+static struct posix_acl *fuse_get_acl(struct inode *inode, int type)
+{
+	int size;
+	const char *name;
+	void *value = NULL;
+	struct posix_acl *acl;
+
+	if (type == ACL_TYPE_ACCESS)
+		name = XATTR_NAME_POSIX_ACL_ACCESS;
+	else if (type == ACL_TYPE_DEFAULT)
+		name = XATTR_NAME_POSIX_ACL_DEFAULT;
+	else
+		return ERR_PTR(-EOPNOTSUPP);
+
+	size = fuse_getxattr(inode, name, NULL, 0);
+	if (size > 0) {
+		value = kzalloc(size, GFP_KERNEL);
+		if (!value)
+			return ERR_PTR(-ENOMEM);
+		size = fuse_getxattr(inode, name, value, size);
+	}
+	if (size > 0) {
+		acl = posix_acl_from_xattr(inode->i_sb->s_user_ns, value, size);
+	} else if ((size == 0) || (size == -ENODATA)) {
+		acl = NULL;
+	} else {
+		acl = ERR_PTR(size);
+	}
+	kfree(value);
+
+	return acl;
+}
+
+static int fuse_set_acl(struct inode *inode, struct posix_acl *acl, int type)
+{
+	const char *name;
+	int ret;
+
+	if (type == ACL_TYPE_ACCESS) {
+		struct iattr attr;
+		name = XATTR_NAME_POSIX_ACL_ACCESS;
+		attr.ia_mode = inode->i_mode;
+		ret = posix_acl_equiv_mode(acl, &attr.ia_mode);
+		if (ret < 0)
+			return ret;
+		if (ret == 0)
+			acl = NULL;
+		if (inode->i_mode != attr.ia_mode) {
+			attr.ia_valid = ATTR_MODE | ATTR_CTIME;
+			attr.ia_ctime = current_fs_time(inode->i_sb);
+			ret = fuse_do_setattr(inode, &attr, NULL);
+			if (ret)
+				return ret;
+		}
+	} else if (type == ACL_TYPE_DEFAULT) {
+		name = XATTR_NAME_POSIX_ACL_DEFAULT;
+	} else {
+		return -EINVAL;
+	}
+
+	if (acl) {
+		struct user_namespace *s_user_ns = inode->i_sb->s_user_ns;
+		size_t size = posix_acl_xattr_size(acl->a_count);
+		void *value = kmalloc(size, GFP_KERNEL);
+		if (!value)
+			return -ENOMEM;
+
+		ret = posix_acl_to_xattr(s_user_ns, acl, value, size);
+		if (ret < 0) {
+			kfree(value);
+			return ret;
+		}
+
+		ret = fuse_setxattr(inode, name, value, size, 0);
+		kfree(value);
+	} else {
+		ret = fuse_removexattr(inode, name);
+	}
+	if (ret == 0)
+		set_cached_acl(inode, type, acl);
+	return ret;
+}
+
 static const struct inode_operations fuse_dir_inode_operations = {
 	.lookup		= fuse_lookup,
 	.mkdir		= fuse_mkdir,
@@ -1879,10 +2036,12 @@ static const struct inode_operations fuse_dir_inode_operations = {
 	.mknod		= fuse_mknod,
 	.permission	= fuse_permission,
 	.getattr	= fuse_getattr,
-	.setxattr	= fuse_setxattr,
-	.getxattr	= fuse_getxattr,
+	.setxattr	= generic_setxattr,
+	.getxattr	= generic_getxattr,
 	.listxattr	= fuse_listxattr,
-	.removexattr	= fuse_removexattr,
+	.removexattr	= generic_removexattr,
+	.get_acl	= fuse_get_acl,
+	.set_acl	= fuse_set_acl,
 };
 
 static const struct file_operations fuse_dir_operations = {
@@ -1900,10 +2059,12 @@ static const struct inode_operations fuse_common_inode_operations = {
 	.setattr	= fuse_setattr,
 	.permission	= fuse_permission,
 	.getattr	= fuse_getattr,
-	.setxattr	= fuse_setxattr,
-	.getxattr	= fuse_getxattr,
+	.setxattr	= generic_setxattr,
+	.getxattr	= generic_getxattr,
 	.listxattr	= fuse_listxattr,
-	.removexattr	= fuse_removexattr,
+	.removexattr	= generic_removexattr,
+	.get_acl	= fuse_get_acl,
+	.set_acl	= fuse_set_acl,
 };
 
 static const struct inode_operations fuse_symlink_inode_operations = {
@@ -1911,10 +2072,12 @@ static const struct inode_operations fuse_symlink_inode_operations = {
 	.get_link	= fuse_get_link,
 	.readlink	= generic_readlink,
 	.getattr	= fuse_getattr,
-	.setxattr	= fuse_setxattr,
-	.getxattr	= fuse_getxattr,
+	.setxattr	= generic_setxattr,
+	.getxattr	= generic_getxattr,
 	.listxattr	= fuse_listxattr,
-	.removexattr	= fuse_removexattr,
+	.removexattr	= generic_removexattr,
+	.get_acl	= fuse_get_acl,
+	.set_acl	= fuse_set_acl,
 };
 
 void fuse_init_common(struct inode *inode)

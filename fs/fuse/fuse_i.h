@@ -23,6 +23,7 @@
 #include <linux/poll.h>
 #include <linux/workqueue.h>
 #include <linux/kref.h>
+#include <linux/xattr.h>
 #include <linux/pid_namespace.h>
 #include <linux/user_namespace.h>
 
@@ -692,6 +693,8 @@ static inline u64 get_node_id(struct inode *inode)
 extern const struct file_operations fuse_dev_operations;
 
 extern const struct dentry_operations fuse_dentry_operations;
+
+extern const struct xattr_handler *fuse_xattr_handlers[];
 
 /**
  * Inode to nodeid comparison.
