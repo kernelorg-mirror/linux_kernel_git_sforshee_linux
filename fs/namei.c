@@ -410,6 +410,14 @@ int __inode_permission(struct inode *inode, int mask)
 		 */
 		if (IS_IMMUTABLE(inode))
 			return -EACCES;
+
+		/*
+		 * Updating mtime will likely cause i_uid and i_gid to be
+		 * written back improperly if their true value is unknown
+		 * to the vfs.
+		 */
+		if (!uid_valid(inode->i_uid) || !gid_valid(inode->i_gid))
+			return -EACCES;
 	}
 
 	retval = do_inode_permission(inode, mask);
