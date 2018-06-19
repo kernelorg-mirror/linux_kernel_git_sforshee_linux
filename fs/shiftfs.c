@@ -535,7 +535,7 @@ static int shiftfs_getattr(const struct path *path, struct kstat *stat,
 	struct dentry *real = path->dentry->d_fsdata;
 	struct inode *reali = real->d_inode;
 	const struct inode_operations *iop = reali->i_op;
-	struct path newpath = { path->dentry->d_sb->s_fs_info, real };
+	struct path newpath = { .mnt = path->dentry->d_sb->s_fs_info, .dentry = real };
 	int err = 0;
 
 	if (iop->getattr)
