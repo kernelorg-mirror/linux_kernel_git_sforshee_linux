@@ -75,31 +75,6 @@ static void shiftfs_old_creds(const struct cred *oldcred,
 	put_cred(*newcred);
 }
 
-static int shiftfs_parse_options(struct shiftfs_super_info *ssi, char *options)
-{
-	char *p;
-	substring_t args[MAX_OPT_ARGS];
-
-	ssi->mark = false;
-
-	while ((p = strsep(&options, ",")) != NULL) {
-		int token;
-
-		if (!*p)
-			continue;
-
-		token = match_token(p, tokens, args);
-		switch (token) {
-		case OPT_MARK:
-			ssi->mark = true;
-			break;
-		default:
-			return -EINVAL;
-		}
-	}
-	return 0;
-}
-
 static void shiftfs_d_release(struct dentry *dentry)
 {
 	struct dentry *real = dentry->d_fsdata;
@@ -652,16 +627,33 @@ static const struct super_operations shiftfs_super_ops = {
 	.statfs		= shiftfs_statfs,
 };
 
-struct shiftfs_data {
-	void *data;
-	const char *path;
+struct shiftfs_fs_context {
+	bool mark;
 };
 
-static int shiftfs_fill_super(struct super_block *sb, void *raw_data,
-			      size_t data_size, int silent)
+static int shiftfs_parse_option(struct fs_context *fc, char *opt, size_t len)
 {
-	struct shiftfs_data *data = raw_data;
-	char *name = kstrdup(data->path, GFP_KERNEL);
+	struct shiftfs_fs_context *ctx = fc->fs_private;
+	substring_t args[MAX_OPT_ARGS];
+	int token;
+
+	args[0].to = args[0].from = NULL;
+	token = match_token(opt, tokens, args);
+	switch (token) {
+	case OPT_MARK:
+		ctx->mark = true;
+		break;
+	default:
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
+static int shiftfs_fill_super(struct super_block *sb, struct fs_context *fc)
+{
+	struct shiftfs_fs_context *ctx = fc->fs_private;
+	char *name = kstrdup(fc->source, GFP_KERNEL);
 	int err = -ENOMEM;
 	struct shiftfs_super_info *ssi = NULL;
 	struct path path;
@@ -675,9 +667,7 @@ static int shiftfs_fill_super(struct super_block *sb, void *raw_data,
 		goto out;
 
 	err = -EPERM;
-	err = shiftfs_parse_options(ssi, data->data);
-	if (err)
-		goto out;
+	ssi->mark = ctx->mark;
 
 	/* to mark a mount point, must be real root */
 	if (ssi->mark && !capable(CAP_SYS_ADMIN))
@@ -749,21 +739,41 @@ static int shiftfs_fill_super(struct super_block *sb, void *raw_data,
 	return err;
 }
 
-static struct dentry *shiftfs_mount(struct file_system_type *fs_type,
-				    int flags, const char *dev_name, void *data,
-				    size_t data_size)
+static int shiftfs_get_tree(struct fs_context *fc)
 {
-	struct shiftfs_data d = { data, dev_name };
+	return vfs_get_super(fc, vfs_get_independent_super, shiftfs_fill_super);
+}
 
-	return mount_nodev(fs_type, flags, &d, sizeof(d), shiftfs_fill_super);
+static void shiftfs_fs_context_free(struct fs_context *fc)
+{
+	kfree(fc->fs_private);
+}
+
+static const struct fs_context_operations shiftfs_fs_context_ops = {
+	.free		= shiftfs_fs_context_free,
+	.parse_option	= shiftfs_parse_option,
+	.get_tree	= shiftfs_get_tree,
+};
+
+static int shiftfs_init_fs_context(struct fs_context *fc, struct dentry *refernce)
+{
+	struct shiftfs_fs_context *ctx;
+
+	ctx = kzalloc(sizeof(*ctx), GFP_KERNEL);
+	if (!ctx)
+		return -ENOMEM;
+
+	fc->fs_private = ctx;
+	fc->ops = &shiftfs_fs_context_ops;
+	return 0;
 }
 
 static struct file_system_type shiftfs_type = {
-	.owner		= THIS_MODULE,
-	.name		= "shiftfs",
-	.mount		= shiftfs_mount,
-	.kill_sb	= kill_anon_super,
-	.fs_flags	= FS_USERNS_MOUNT,
+	.owner			= THIS_MODULE,
+	.name			= "shiftfs",
+	.init_fs_context	= shiftfs_init_fs_context,
+	.kill_sb		= kill_anon_super,
+	.fs_flags		= FS_USERNS_MOUNT,
 };
 
 static int __init shiftfs_init(void)
