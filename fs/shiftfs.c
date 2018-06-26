@@ -658,7 +658,7 @@ struct shiftfs_data {
 };
 
 static int shiftfs_fill_super(struct super_block *sb, void *raw_data,
-			      int silent)
+			      size_t data_size, int silent)
 {
 	struct shiftfs_data *data = raw_data;
 	char *name = kstrdup(data->path, GFP_KERNEL);
@@ -750,11 +750,12 @@ static int shiftfs_fill_super(struct super_block *sb, void *raw_data,
 }
 
 static struct dentry *shiftfs_mount(struct file_system_type *fs_type,
-				    int flags, const char *dev_name, void *data)
+				    int flags, const char *dev_name, void *data,
+				    size_t data_size)
 {
 	struct shiftfs_data d = { data, dev_name };
 
-	return mount_nodev(fs_type, flags, &d, shiftfs_fill_super);
+	return mount_nodev(fs_type, flags, &d, sizeof(d), shiftfs_fill_super);
 }
 
 static struct file_system_type shiftfs_type = {
