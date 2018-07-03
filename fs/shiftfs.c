@@ -17,7 +17,6 @@
 struct shiftfs_super_info {
 	struct vfsmount *mnt;
 	struct user_namespace *userns;
-	bool mark;
 };
 
 static struct inode *shiftfs_new_inode(struct super_block *sb, umode_t mode,
@@ -30,7 +29,6 @@ enum {
 
 /* global filesystem options */
 static const match_table_t tokens = {
-	{ OPT_MARK, "mark" },
 	{ OPT_LAST, NULL }
 };
 
@@ -572,17 +570,6 @@ static struct inode *shiftfs_new_inode(struct super_block *sb, umode_t mode,
 	return inode;
 }
 
-static int shiftfs_show_options(struct seq_file *m, struct dentry *dentry)
-{
-	struct super_block *sb = dentry->d_sb;
-	struct shiftfs_super_info *ssi = sb->s_fs_info;
-
-	if (ssi->mark)
-		seq_show_option(m, "mark", NULL);
-
-	return 0;
-}
-
 static int shiftfs_statfs(struct dentry *dentry, struct kstatfs *buf)
 {
 	struct super_block *sb = dentry->d_sb;
@@ -623,27 +610,56 @@ const struct xattr_handler *shiftfs_xattr_handlers[] = {
 
 static const struct super_operations shiftfs_super_ops = {
 	.put_super	= shiftfs_put_super,
-	.show_options	= shiftfs_show_options,
 	.statfs		= shiftfs_statfs,
 };
 
 struct shiftfs_fs_context {
-	bool mark;
+	struct path *src_path;
 };
 
-static int shiftfs_parse_option(struct fs_context *fc, char *opt, size_t len)
+static int shiftfs_parse_source(struct fs_context *fc, char *source)
 {
 	struct shiftfs_fs_context *ctx = fc->fs_private;
-	substring_t args[MAX_OPT_ARGS];
-	int token;
+	char *name = kstrdup(source, GFP_KERNEL);
+	struct path *path = NULL;
+	int err = -ENOMEM;
 
-	args[0].to = args[0].from = NULL;
-	token = match_token(opt, tokens, args);
-	switch (token) {
-	case OPT_MARK:
-		ctx->mark = true;
-		break;
-	default:
+	if (!name)
+		goto out;
+
+	path = kzalloc(sizeof(*path), GFP_KERNEL);
+	if (!path)
+		goto out;
+
+	err = kern_path(name, LOOKUP_FOLLOW, path);
+	if (err)
+		goto out;
+
+	err = -EPERM;
+	if (!ns_capable(path->dentry->d_sb->s_user_ns, CAP_SYS_ADMIN))
+		goto out_put;
+
+	err = -ENOTDIR;
+	if (!S_ISDIR(path->dentry->d_inode->i_mode))
+		goto out_put;
+
+	ctx->src_path = path;
+	return 0;
+
+ out_put:
+	path_put(path);
+ out:
+	kfree(path);
+	kfree(name);
+	return err;
+}
+
+static int shiftfs_validate_fc(struct fs_context *fc)
+{
+	struct shiftfs_fs_context *ctx = fc->fs_private;
+
+	if (!ctx->src_path) {
+		pr_warn("shiftfs: No source path specified\n");
 		return -EINVAL;
 	}
 
@@ -656,7 +672,7 @@ static int shiftfs_fill_super(struct super_block *sb, struct fs_context *fc)
 	char *name = kstrdup(fc->source, GFP_KERNEL);
 	int err = -ENOMEM;
 	struct shiftfs_super_info *ssi = NULL;
-	struct path path;
+	struct path *path = ctx->src_path;
 	struct dentry *dentry;
 
 	if (!name)
@@ -666,60 +682,15 @@ static int shiftfs_fill_super(struct super_block *sb, struct fs_context *fc)
 	if (!ssi)
 		goto out;
 
-	err = -EPERM;
-	ssi->mark = ctx->mark;
-
-	/* to mark a mount point, must be real root */
-	if (ssi->mark && !capable(CAP_SYS_ADMIN))
-		goto out;
-
-	/* else to mount a mark, must be userns admin */
-	if (!ssi->mark && !ns_capable(current_user_ns(), CAP_SYS_ADMIN))
-		goto out;
-
-	err = kern_path(name, LOOKUP_FOLLOW, &path);
-	if (err)
-		goto out;
-
-	err = -EPERM;
-
-	if (!S_ISDIR(path.dentry->d_inode->i_mode)) {
-		err = -ENOTDIR;
-		goto out_put;
-	}
-
-	sb->s_stack_depth = path.dentry->d_sb->s_stack_depth + 1;
+	sb->s_stack_depth = path->dentry->d_sb->s_stack_depth + 1;
 	if (sb->s_stack_depth > FILESYSTEM_MAX_STACK_DEPTH) {
 		printk(KERN_ERR "shiftfs: maximum stacking depth exceeded\n");
 		err = -EINVAL;
-		goto out_put;
+		goto out;
 	}
 
-	if (ssi->mark) {
-		/*
-		 * this part is visible unshifted, so make sure no
-		 * executables that could be used to give suid
-		 * privileges
-		 */
-		sb->s_iflags = SB_I_NOEXEC;
-		ssi->mnt = path.mnt;
-		dentry = path.dentry;
-	} else {
-		struct shiftfs_super_info *mp_ssi;
-
-		/*
-		 * this leg executes if we're admin capable in
-		 * the namespace, so be very careful
-		 */
-		if (path.dentry->d_sb->s_magic != SHIFTFS_MAGIC)
-			goto out_put;
-		mp_ssi = path.dentry->d_sb->s_fs_info;
-		if (!mp_ssi->mark)
-			goto out_put;
-		ssi->mnt = mntget(mp_ssi->mnt);
-		dentry = dget(path.dentry->d_fsdata);
-		path_put(&path);
-	}
+	dentry = dget(path->dentry);
+	ssi->mnt = mntget(path->mnt);
 	ssi->userns = get_user_ns(dentry->d_sb->s_user_ns);
 	sb->s_fs_info = ssi;
 	sb->s_magic = SHIFTFS_MAGIC;
@@ -731,8 +702,6 @@ static int shiftfs_fill_super(struct super_block *sb, struct fs_context *fc)
 
 	return 0;
 
- out_put:
-	path_put(&path);
  out:
 	kfree(name);
 	kfree(ssi);
@@ -741,17 +710,37 @@ static int shiftfs_fill_super(struct super_block *sb, struct fs_context *fc)
 
 static int shiftfs_get_tree(struct fs_context *fc)
 {
+	/*
+	 * For shiftfs we hand of the filesystem fd from a more privileged
+	 * context to a less privileged one. We want the crds and user ns of
+	 * the less privileged context; we must make the switch before
+	 * calling vfs_get_super() or else we'll fail the capability check
+	 * in sget_fc().
+	 */
+	if (fc->cred)
+		put_cred(fc->cred);
+	put_user_ns(fc->user_ns);
+	fc->cred = get_current_cred();
+	fc->user_ns = get_user_ns(fc->cred->user_ns);
+
 	return vfs_get_super(fc, vfs_get_independent_super, shiftfs_fill_super);
 }
 
 static void shiftfs_fs_context_free(struct fs_context *fc)
 {
-	kfree(fc->fs_private);
+	struct shiftfs_fs_context *ctx = fc->fs_private;
+
+	if (ctx->src_path) {
+		path_put(ctx->src_path);
+		kfree(ctx->src_path);
+	}
+	kfree(ctx);
 }
 
 static const struct fs_context_operations shiftfs_fs_context_ops = {
 	.free		= shiftfs_fs_context_free,
-	.parse_option	= shiftfs_parse_option,
+	.parse_source	= shiftfs_parse_source,
+	.validate	= shiftfs_validate_fc,
 	.get_tree	= shiftfs_get_tree,
 };
 
@@ -773,7 +762,7 @@ static struct file_system_type shiftfs_type = {
 	.name			= "shiftfs",
 	.init_fs_context	= shiftfs_init_fs_context,
 	.kill_sb		= kill_anon_super,
-	.fs_flags		= FS_USERNS_MOUNT,
+	.fs_flags		= FS_REQUIRES_DEV | FS_USERNS_MOUNT,
 };
 
 static int __init shiftfs_init(void)
