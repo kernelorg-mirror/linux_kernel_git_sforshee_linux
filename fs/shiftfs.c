@@ -730,6 +730,10 @@ static void shiftfs_fs_context_free(struct fs_context *fc)
 {
 	struct shiftfs_fs_context *ctx = fc->fs_private;
 
+	if (!ctx)
+		return;
+
+	fc->fs_private = NULL;
 	if (ctx->src_path) {
 		path_put(ctx->src_path);
 		kfree(ctx->src_path);
