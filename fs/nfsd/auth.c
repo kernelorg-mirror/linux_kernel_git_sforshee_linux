@@ -68,9 +68,9 @@ int nfsd_setuser(struct svc_rqst *rqstp, struct svc_export *exp)
 		gi = get_group_info(rqgi);
 	}
 
-	if (uid_eq(new->fsuid, INVALID_UID))
+	if (!uid_valid(new->fsuid))
 		new->fsuid = exp->ex_anon_uid;
-	if (gid_eq(new->fsgid, INVALID_GID))
+	if (!gid_valid(new->fsgid))
 		new->fsgid = exp->ex_anon_gid;
 
 	set_groups(new, gi);

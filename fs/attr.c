@@ -39,8 +39,7 @@ static bool chown_ok(struct user_namespace *mnt_userns,
 		return true;
 	if (capable_wrt_inode_uidgid(mnt_userns, inode, CAP_CHOWN))
 		return true;
-	if (uid_eq(kuid, INVALID_UID) &&
-	    ns_capable(inode->i_sb->s_user_ns, CAP_CHOWN))
+	if (!uid_valid(kuid) && ns_capable(inode->i_sb->s_user_ns, CAP_CHOWN))
 		return true;
 	return false;
 }
@@ -72,8 +71,7 @@ static bool chgrp_ok(struct user_namespace *mnt_userns,
 	}
 	if (capable_wrt_inode_uidgid(mnt_userns, inode, CAP_CHOWN))
 		return true;
-	if (gid_eq(kgid, INVALID_GID) &&
-	    ns_capable(inode->i_sb->s_user_ns, CAP_CHOWN))
+	if (!gid_valid(kgid) && ns_capable(inode->i_sb->s_user_ns, CAP_CHOWN))
 		return true;
 	return false;
 }

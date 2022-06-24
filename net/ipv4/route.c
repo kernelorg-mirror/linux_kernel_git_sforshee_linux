@@ -3041,7 +3041,7 @@ static int rt_fill_info(struct net *net, __be32 dst, __be32 src,
 		    nla_put_u32(skb, RTA_MARK, fl4->flowi4_mark))
 			goto nla_put_failure;
 
-		if (!uid_eq(fl4->flowi4_uid, INVALID_UID) &&
+		if (uid_valid(fl4->flowi4_uid) &&
 		    nla_put_u32(skb, RTA_UID,
 				from_kuid_munged(current_user_ns(),
 						 fl4->flowi4_uid)))

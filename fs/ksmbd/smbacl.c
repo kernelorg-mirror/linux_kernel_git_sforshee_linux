@@ -488,7 +488,7 @@ static void parse_dacl(struct user_namespace *user_ns,
 							ppace[i]->type);
 			temp_fattr.cf_uid = INVALID_UID;
 			ret = sid_to_id(user_ns, &ppace[i]->sid, SIDOWNER, &temp_fattr);
-			if (ret || uid_eq(temp_fattr.cf_uid, INVALID_UID)) {
+			if (ret || !uid_valid(temp_fattr.cf_uid)) {
 				pr_err("%s: Error %d mapping Owner SID to uid\n",
 				       __func__, ret);
 				continue;
@@ -1324,11 +1324,11 @@ int set_info_sec(struct ksmbd_conn *conn, struct ksmbd_tree_connect *tcon,
 		goto out;
 
 	newattrs.ia_valid = ATTR_CTIME;
-	if (!uid_eq(fattr.cf_uid, INVALID_UID)) {
+	if (uid_valid(fattr.cf_uid)) {
 		newattrs.ia_valid |= ATTR_UID;
 		newattrs.ia_uid = fattr.cf_uid;
 	}
-	if (!gid_eq(fattr.cf_gid, INVALID_GID)) {
+	if (gid_valid(fattr.cf_gid)) {
 		newattrs.ia_valid |= ATTR_GID;
 		newattrs.ia_gid = fattr.cf_gid;
 	}
