@@ -389,6 +389,15 @@ int security_inode_listxattr(struct dentry *dentry);
 int security_inode_removexattr(struct mnt_idmap *idmap,
 			       struct dentry *dentry, const char *name);
 void security_inode_post_removexattr(struct dentry *dentry, const char *name);
+int security_inode_set_fscaps(struct mnt_idmap *idmap, struct dentry *dentry,
+			      const struct vfs_caps *caps, int flags);
+void security_inode_post_set_fscaps(struct mnt_idmap *idmap,
+				    struct dentry *dentry,
+				    const struct vfs_caps *caps, int flags);
+int security_inode_get_fscaps(struct mnt_idmap *idmap, struct dentry *dentry);
+int security_inode_remove_fscaps(struct mnt_idmap *idmap, struct dentry *dentry);
+void security_inode_post_remove_fscaps(struct mnt_idmap *idmap,
+				       struct dentry *dentry);
 int security_inode_need_killpriv(struct dentry *dentry);
 int security_inode_killpriv(struct mnt_idmap *idmap, struct dentry *dentry);
 int security_inode_getsecurity(struct mnt_idmap *idmap,
@@ -969,6 +978,34 @@ static inline int security_inode_removexattr(struct mnt_idmap *idmap,
 
 static inline void security_inode_post_removexattr(struct dentry *dentry,
 						   const char *name)
+{ }
+
+static inline int security_inode_set_fscaps(struct mnt_idmap *idmap,
+					    struct dentry *dentry,
+					    const struct vfs_caps *caps,
+					    int flags)
+{
+	return 0;
+}
+static inline void security_inode_post_set_fscaps(struct mnt_idmap *idmap,
+						  struct dentry *dentry,
+						  const struct vfs_caps *caps,
+						  int flags)
+{ }
+
+static inline int security_inode_get_fscaps(struct mnt_idmap *idmap,
+					    struct dentry *dentry)
+{
+	return 0;
+}
+
+static inline int security_inode_remove_fscaps(struct mnt_idmap *idmap,
+					       struct dentry *dentry)
+{
+	return 0;
+}
+static inline void security_inode_post_remove_fscaps(struct mnt_idmap *idmap,
+						     struct dentry *dentry)
 { }
 
 static inline int security_inode_need_killpriv(struct dentry *dentry)
