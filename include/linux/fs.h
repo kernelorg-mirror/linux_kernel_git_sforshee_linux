@@ -2144,6 +2144,8 @@ int vfs_get_fscaps(struct mnt_idmap *idmap, struct dentry *dentry,
 		   struct vfs_caps *caps);
 int vfs_set_fscaps(struct mnt_idmap *idmap, struct dentry *dentry,
 		   const struct vfs_caps *caps, int setxattr_flags);
+int vfs_remove_fscaps_nosec(struct mnt_idmap *idmap, struct dentry *dentry);
+int vfs_remove_fscaps(struct mnt_idmap *idmap, struct dentry *dentry);
 
 /**
  * enum freeze_holder - holder of the freeze
