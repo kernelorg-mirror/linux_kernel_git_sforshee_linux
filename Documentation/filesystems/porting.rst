@@ -1134,3 +1134,23 @@ superblock of the main block device, i.e., the one stored in sb->s_bdev. Block
 device freezing now works for any block device owned by a given superblock, not
 just the main block device. The get_active_super() helper and bd_fsfreeze_sb
 pointer are gone.
+
+---
+
+**mandatory**
+
+New inode operations: ->get_fscaps and ->set_fscaps
+
+These operations must be implemented for all filesystems which support
+filesystem capabilities (which in general is all filesystems which support
+security.* xattrs). Filesystem xattr handlers will no longer be used for these
+xattrs. The vfs_caps_{to,from}_xattr() helpers should be used for translating
+between the xattr and kernel-internal formats; see in-tree filesystems for
+examples.
+
+Stacking filesystems which support idmapped mounts must be aware that the
+rootid member of struct vfs_caps is of type vfsuid_t, as the rootid is always
+evaluated in the context of the mount. This differs from ACLs, which are
+cached and used for permission checks and use thus use k[ug]id_t. The rootid
+must be translated between the mnt_idmap passed to ->{get,set}_fscaps and the
+mnt_idmap of the lower filesystem(s). See ovl_{get,set}_fscaps for exmaples.
