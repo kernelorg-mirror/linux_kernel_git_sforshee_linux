@@ -415,7 +415,7 @@ __vfs_setxattr(struct mnt_idmap *idmap, struct dentry *dentry,
 {
 	const struct xattr_handler *handler;
 
-	if (is_posix_acl_xattr(name))
+	if (is_posix_acl_xattr(name) || is_fscaps_xattr(name))
 		return -EOPNOTSUPP;
 
 	handler = xattr_resolve_name(inode, &name);
@@ -633,7 +633,7 @@ __vfs_getxattr(struct dentry *dentry, struct inode *inode, const char *name,
 {
 	const struct xattr_handler *handler;
 
-	if (is_posix_acl_xattr(name))
+	if (is_posix_acl_xattr(name) || is_fscaps_xattr(name))
 		return -EOPNOTSUPP;
 
 	handler = xattr_resolve_name(inode, &name);
@@ -728,7 +728,7 @@ __vfs_removexattr(struct mnt_idmap *idmap, struct dentry *dentry,
 	struct inode *inode = d_inode(dentry);
 	const struct xattr_handler *handler;
 
-	if (is_posix_acl_xattr(name))
+	if (is_posix_acl_xattr(name) || is_fscaps_xattr(name))
 		return -EOPNOTSUPP;
 
 	handler = xattr_resolve_name(inode, &name);
