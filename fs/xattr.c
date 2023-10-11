@@ -368,6 +368,46 @@ out_inode_unlock:
 }
 EXPORT_SYMBOL(vfs_remove_fscaps);
 
+static ssize_t do_get_fscaps(struct mnt_idmap *idmap, struct dentry *dentry,
+			     void *kvalue, size_t size)
+{
+	struct vfs_caps caps;
+	int ret;
+
+	ret = vfs_get_fscaps(idmap, dentry, &caps);
+	if (ret)
+		return ret;
+
+	/*
+	 * rootid is already in the mount idmap, so pass nop_mnt_idmap so that
+	 * it won't be mapped.
+	 */
+	return vfs_caps_to_user_xattr(&nop_mnt_idmap, current_user_ns(), &caps,
+				      kvalue, size);
+}
+
+static int do_set_fscaps(struct mnt_idmap *idmap, struct dentry *dentry,
+			 void *kvalue, size_t size, int setxattr_flags)
+{
+	struct vfs_caps caps;
+	int ret;
+
+	/*
+	 * rootid is already in the mount idmap, so pass nop_mnt_idmap so that
+	 * it won't be mapped.
+	 */
+	ret = vfs_caps_from_xattr(&nop_mnt_idmap, current_user_ns(), &caps,
+				  kvalue, size);
+	if (ret)
+		return ret;
+
+	ret = cap_convert_nscap(idmap, dentry, &caps);
+	if (ret)
+		return ret;
+
+	return vfs_set_fscaps(idmap, dentry, &caps, setxattr_flags);
+}
+
 int
 __vfs_setxattr(struct mnt_idmap *idmap, struct dentry *dentry,
 	       struct inode *inode, const char *name, const void *value,
@@ -496,13 +536,6 @@ vfs_setxattr(struct mnt_idmap *idmap, struct dentry *dentry,
 	struct inode *delegated_inode = NULL;
 	const void  *orig_value = value;
 	int error;
-
-	if (size && is_fscaps_xattr(name)) {
-		error = cap_convert_nscap(idmap, dentry, &value, size);
-		if (error < 0)
-			return error;
-		size = error;
-	}
 
 retry_deleg:
 	inode_lock(inode);
@@ -814,6 +847,10 @@ int do_setxattr(struct mnt_idmap *idmap, struct dentry *dentry,
 		return do_set_acl(idmap, dentry, ctx->kname->name,
 				  ctx->kvalue, ctx->size);
 
+	if (is_fscaps_xattr(ctx->kname->name))
+		return do_set_fscaps(idmap, dentry, ctx->kvalue, ctx->size,
+				     ctx->flags);
+
 	return vfs_setxattr(idmap, dentry, ctx->kname->name,
 			ctx->kvalue, ctx->size, ctx->flags);
 }
@@ -922,6 +959,8 @@ do_getxattr(struct mnt_idmap *idmap, struct dentry *d,
 
 	if (is_posix_acl_xattr(ctx->kname->name))
 		error = do_get_acl(idmap, d, kname, ctx->kvalue, ctx->size);
+	else if (is_fscaps_xattr(kname))
+		error = do_get_fscaps(idmap, d, ctx->kvalue, ctx->size);
 	else
 		error = vfs_getxattr(idmap, d, kname, ctx->kvalue, ctx->size);
 	if (error > 0) {
@@ -1101,6 +1140,9 @@ removexattr(struct mnt_idmap *idmap, struct dentry *d,
 
 	if (is_posix_acl_xattr(kname))
 		return vfs_remove_acl(idmap, d, kname);
+
+	if (is_fscaps_xattr(kname))
+		return vfs_remove_fscaps(idmap, d);
 
 	return vfs_removexattr(idmap, d, kname);
 }
