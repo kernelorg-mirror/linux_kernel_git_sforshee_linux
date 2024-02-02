@@ -853,6 +853,79 @@ static inline void evm_inode_post_remove_acl(struct mnt_idmap *idmap,
 	evm_inode_post_removexattr(dentry, acl_name);
 }
 
+static int evm_inode_set_fscaps(struct mnt_idmap *idmap, struct dentry *dentry,
+				const struct vfs_caps *caps, int flags)
+{
+	struct inode *inode = d_inode(dentry);
+	struct vfs_ns_cap_data nscaps;
+	const void *xattr_data = NULL;
+	int size = 0;
+
+	/* Policy permits modification of the protected xattrs even though
+	 * there's no HMAC key loaded
+	 */
+	if (evm_initialized & EVM_ALLOW_METADATA_WRITES)
+		return 0;
+
+	if (caps) {
+		size = vfs_caps_to_xattr(idmap, i_user_ns(inode), caps, &nscaps,
+					 sizeof(nscaps));
+		if (size < 0)
+			return size;
+		xattr_data = &nscaps;
+	}
+
+	return evm_protect_xattr(idmap, dentry, XATTR_NAME_CAPS, xattr_data, size);
+}
+
+static void evm_inode_post_set_fscaps(struct mnt_idmap *idmap,
+				      struct dentry *dentry,
+				      const struct vfs_caps *caps, int flags)
+{
+	struct inode *inode = d_inode(dentry);
+	struct vfs_ns_cap_data nscaps;
+	const void *xattr_data = NULL;
+	int size = 0;
+
+	if (!evm_revalidate_status(XATTR_NAME_CAPS))
+		return;
+
+	evm_reset_status(dentry->d_inode);
+
+	if (!(evm_initialized & EVM_INIT_HMAC))
+		return;
+
+	if (is_unsupported_fs(dentry))
+		return;
+
+	if (caps) {
+		size = vfs_caps_to_xattr(idmap, i_user_ns(inode), caps, &nscaps,
+					 sizeof(nscaps));
+		/*
+		 * The fscaps here should have been converted to an xattr by
+		 * evm_inode_set_fscaps() already, so a failure to convert
+		 * here is a bug.
+		 */
+		if (WARN_ON_ONCE(size < 0))
+			return;
+		xattr_data = &nscaps;
+	}
+
+	evm_update_evmxattr(dentry, XATTR_NAME_CAPS, xattr_data, size);
+}
+
+static int evm_inode_remove_fscaps(struct mnt_idmap *idmap,
+				   struct dentry *dentry)
+{
+	return evm_inode_set_fscaps(idmap, dentry, NULL, XATTR_REPLACE);
+}
+
+static void evm_inode_post_remove_fscaps(struct mnt_idmap *idmap,
+					 struct dentry *dentry)
+{
+	return evm_inode_post_set_fscaps(idmap, dentry, NULL, 0);
+}
+
 static int evm_attr_change(struct mnt_idmap *idmap,
 			   struct dentry *dentry, struct iattr *attr)
 {
@@ -1097,6 +1170,10 @@ static struct security_hook_list evm_hooks[] __ro_after_init = {
 	LSM_HOOK_INIT(inode_post_remove_acl, evm_inode_post_remove_acl),
 	LSM_HOOK_INIT(inode_removexattr, evm_inode_removexattr),
 	LSM_HOOK_INIT(inode_post_removexattr, evm_inode_post_removexattr),
+	LSM_HOOK_INIT(inode_set_fscaps, evm_inode_set_fscaps),
+	LSM_HOOK_INIT(inode_post_set_fscaps, evm_inode_post_set_fscaps),
+	LSM_HOOK_INIT(inode_remove_fscaps, evm_inode_remove_fscaps),
+	LSM_HOOK_INIT(inode_post_remove_fscaps, evm_inode_post_remove_fscaps),
 	LSM_HOOK_INIT(inode_init_security, evm_inode_init_security),
 	LSM_HOOK_INIT(inode_alloc_security, evm_inode_alloc_security),
 	LSM_HOOK_INIT(file_release, evm_file_release),
