@@ -1195,9 +1195,6 @@ int cap_bprm_creds_from_file(struct linux_binprm *bprm, const struct file *file)
  * cap_inode_setxattr - Determine whether an xattr may be altered
  * @dentry: The inode/dentry being altered
  * @name: The name of the xattr to be changed
- * @value: The value that the xattr will be changed to
- * @size: The size of value
- * @flags: The replacement flag
  *
  * Determine whether an xattr may be altered or set on an inode, returning 0 if
  * permission is granted, -ve if denied.
@@ -1205,8 +1202,7 @@ int cap_bprm_creds_from_file(struct linux_binprm *bprm, const struct file *file)
  * This is used to make sure security xattrs don't get updated or set by those
  * who aren't privileged to do so.
  */
-int cap_inode_setxattr(struct dentry *dentry, const char *name,
-		       const void *value, size_t size, int flags)
+int cap_inode_setxattr(struct dentry *dentry, const char *name)
 {
 	struct user_namespace *user_ns = dentry->d_sb->s_user_ns;
 

@@ -2298,7 +2298,7 @@ int security_inode_setxattr(struct mnt_idmap *idmap,
 			    flags);
 
 	if (ret == 1)
-		ret = cap_inode_setxattr(dentry, name, value, size, flags);
+		ret = cap_inode_setxattr(dentry, name);
 	return ret;
 }
 
