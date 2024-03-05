@@ -20,6 +20,7 @@
 #include <linux/slab.h>
 #include <linux/xattr.h>
 #include <linux/posix_acl.h>
+#include <linux/capability.h>
 #include <net/9p/9p.h>
 #include <net/9p/client.h>
 
@@ -1321,6 +1322,8 @@ static const struct inode_operations v9fs_dir_inode_operations_dotu = {
 	.rename = v9fs_vfs_rename,
 	.getattr = v9fs_vfs_getattr,
 	.setattr = v9fs_vfs_setattr,
+	.get_fscaps = v9fs_get_fscaps,
+	.set_fscaps = v9fs_set_fscaps,
 };
 
 static const struct inode_operations v9fs_dir_inode_operations = {
@@ -1334,16 +1337,22 @@ static const struct inode_operations v9fs_dir_inode_operations = {
 	.rename = v9fs_vfs_rename,
 	.getattr = v9fs_vfs_getattr,
 	.setattr = v9fs_vfs_setattr,
+	.get_fscaps = v9fs_get_fscaps,
+	.set_fscaps = v9fs_set_fscaps,
 };
 
 static const struct inode_operations v9fs_file_inode_operations = {
 	.getattr = v9fs_vfs_getattr,
 	.setattr = v9fs_vfs_setattr,
+	.get_fscaps = v9fs_get_fscaps,
+	.set_fscaps = v9fs_set_fscaps,
 };
 
 static const struct inode_operations v9fs_symlink_inode_operations = {
 	.get_link = v9fs_vfs_get_link,
 	.getattr = v9fs_vfs_getattr,
 	.setattr = v9fs_vfs_setattr,
+	.get_fscaps = v9fs_get_fscaps,
+	.set_fscaps = v9fs_set_fscaps,
 };
 

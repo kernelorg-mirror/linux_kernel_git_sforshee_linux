@@ -180,6 +180,10 @@ extern int v9fs_vfs_rename(struct mnt_idmap *idmap,
 			   struct inode *new_dir, struct dentry *new_dentry,
 			   unsigned int flags);
 extern struct inode *v9fs_fid_iget(struct super_block *sb, struct p9_fid *fid);
+int v9fs_get_fscaps(struct mnt_idmap *idmap, struct dentry *dentry,
+		    struct vfs_caps *caps);
+int v9fs_set_fscaps(struct mnt_idmap *idmap, struct dentry *dentry,
+		    const struct vfs_caps *caps, int setxattr_flags);
 extern const struct inode_operations v9fs_dir_inode_operations_dotl;
 extern const struct inode_operations v9fs_file_inode_operations_dotl;
 extern const struct inode_operations v9fs_symlink_inode_operations_dotl;
