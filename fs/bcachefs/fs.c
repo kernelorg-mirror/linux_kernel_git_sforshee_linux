@@ -17,6 +17,7 @@
 #include "fs-io-buffered.h"
 #include "fs-io-direct.h"
 #include "fs-io-pagecache.h"
+#include "fscaps.h"
 #include "fsck.h"
 #include "inode.h"
 #include "io_read.h"
@@ -1132,6 +1133,8 @@ static const struct inode_operations bch_file_inode_operations = {
 	.get_acl	= bch2_get_acl,
 	.set_acl	= bch2_set_acl,
 #endif
+	.get_fscaps	= bch2_get_fscaps,
+	.set_fscaps	= bch2_set_fscaps,
 };
 
 static const struct inode_operations bch_dir_inode_operations = {
@@ -1152,6 +1155,8 @@ static const struct inode_operations bch_dir_inode_operations = {
 	.get_acl	= bch2_get_acl,
 	.set_acl	= bch2_set_acl,
 #endif
+	.get_fscaps	= bch2_get_fscaps,
+	.set_fscaps	= bch2_set_fscaps,
 };
 
 static const struct file_operations bch_dir_file_operations = {
@@ -1174,6 +1179,8 @@ static const struct inode_operations bch_symlink_inode_operations = {
 	.get_acl	= bch2_get_acl,
 	.set_acl	= bch2_set_acl,
 #endif
+	.get_fscaps	= bch2_get_fscaps,
+	.set_fscaps	= bch2_set_fscaps,
 };
 
 static const struct inode_operations bch_special_inode_operations = {
@@ -1184,6 +1191,8 @@ static const struct inode_operations bch_special_inode_operations = {
 	.get_acl	= bch2_get_acl,
 	.set_acl	= bch2_set_acl,
 #endif
+	.get_fscaps	= bch2_get_fscaps,
+	.set_fscaps	= bch2_set_fscaps,
 };
 
 static const struct address_space_operations bch_address_space_operations = {

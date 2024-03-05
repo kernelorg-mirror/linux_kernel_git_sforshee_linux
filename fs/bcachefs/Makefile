@@ -46,6 +46,7 @@ bcachefs-y		:=	\
 	fs-io-buffered.o	\
 	fs-io-direct.o		\
 	fs-io-pagecache.o	\
+	fscaps.o		\
 	fsck.o			\
 	inode.o			\
 	io_read.o		\
