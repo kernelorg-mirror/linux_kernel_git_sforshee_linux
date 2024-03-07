@@ -2220,6 +2220,8 @@ const struct inode_operations ceph_dir_iops = {
 	.rename = ceph_rename,
 	.create = ceph_create,
 	.atomic_open = ceph_atomic_open,
+	.get_fscaps = ceph_get_fscaps,
+	.set_fscaps = ceph_set_fscaps,
 };
 
 const struct inode_operations ceph_snapdir_iops = {
@@ -2229,6 +2231,8 @@ const struct inode_operations ceph_snapdir_iops = {
 	.mkdir = ceph_mkdir,
 	.rmdir = ceph_unlink,
 	.rename = ceph_rename,
+	.get_fscaps = ceph_get_fscaps,
+	.set_fscaps = ceph_set_fscaps,
 };
 
 const struct dentry_operations ceph_dentry_ops = {

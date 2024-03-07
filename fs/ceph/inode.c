@@ -238,6 +238,8 @@ const struct inode_operations ceph_file_iops = {
 	.listxattr = ceph_listxattr,
 	.get_inode_acl = ceph_get_acl,
 	.set_acl = ceph_set_acl,
+	.get_fscaps = ceph_get_fscaps,
+	.set_fscaps = ceph_set_fscaps,
 };
 
 
@@ -2312,6 +2314,8 @@ static const struct inode_operations ceph_symlink_iops = {
 	.setattr = ceph_setattr,
 	.getattr = ceph_getattr,
 	.listxattr = ceph_listxattr,
+	.get_fscaps = ceph_get_fscaps,
+	.set_fscaps = ceph_set_fscaps,
 };
 
 static const struct inode_operations ceph_encrypted_symlink_iops = {
@@ -2319,6 +2323,8 @@ static const struct inode_operations ceph_encrypted_symlink_iops = {
 	.setattr = ceph_setattr,
 	.getattr = ceph_encrypted_symlink_getattr,
 	.listxattr = ceph_listxattr,
+	.get_fscaps = ceph_get_fscaps,
+	.set_fscaps = ceph_set_fscaps,
 };
 
 /*

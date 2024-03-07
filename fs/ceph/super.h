@@ -21,6 +21,7 @@
 #include <linux/netfs.h>
 #include <linux/fscache.h>
 #include <linux/hashtable.h>
+#include <linux/capability.h>
 
 #include <linux/ceph/libceph.h>
 #include "crypto.h"
@@ -1431,6 +1432,12 @@ extern bool ceph_quota_is_max_bytes_approaching(struct inode *inode,
 extern bool ceph_quota_update_statfs(struct ceph_fs_client *fsc,
 				     struct kstatfs *buf);
 extern void ceph_cleanup_quotarealms_inodes(struct ceph_mds_client *mdsc);
+
+/* fscaps.c */
+int ceph_get_fscaps(struct mnt_idmap *idmap, struct dentry *dentry,
+		    struct vfs_caps *caps);
+int ceph_set_fscaps(struct mnt_idmap *idmap, struct dentry *dentry,
+		    const struct vfs_caps *caps, int setxattr_flags);
 
 bool ceph_inc_mds_stopping_blocker(struct ceph_mds_client *mdsc,
 			       struct ceph_mds_session *session);
