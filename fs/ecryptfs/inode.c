@@ -21,6 +21,7 @@
 #include <linux/posix_acl.h>
 #include <linux/posix_acl_xattr.h>
 #include <linux/fileattr.h>
+#include <linux/capability.h>
 #include <asm/unaligned.h>
 #include "ecryptfs_kernel.h"
 
@@ -1163,12 +1164,28 @@ static int ecryptfs_set_acl(struct mnt_idmap *idmap,
 	return rc;
 }
 
+static int ecryptfs_get_fscaps(struct mnt_idmap *idmap, struct dentry *dentry,
+			       struct vfs_caps *caps)
+{
+	return vfs_get_fscaps(&nop_mnt_idmap, ecryptfs_dentry_to_lower(dentry),
+			      caps);
+}
+
+static int ecryptfs_set_fscaps(struct mnt_idmap *idmap, struct dentry *dentry,
+			       const struct vfs_caps *caps, int setxattr_flags)
+{
+	return vfs_set_fscaps(&nop_mnt_idmap, ecryptfs_dentry_to_lower(dentry),
+			      caps, setxattr_flags);
+}
+
 const struct inode_operations ecryptfs_symlink_iops = {
 	.get_link = ecryptfs_get_link,
 	.permission = ecryptfs_permission,
 	.setattr = ecryptfs_setattr,
 	.getattr = ecryptfs_getattr_link,
 	.listxattr = ecryptfs_listxattr,
+	.get_fscaps = ecryptfs_get_fscaps,
+	.set_fscaps = ecryptfs_set_fscaps,
 };
 
 const struct inode_operations ecryptfs_dir_iops = {
@@ -1188,6 +1205,8 @@ const struct inode_operations ecryptfs_dir_iops = {
 	.fileattr_set = ecryptfs_fileattr_set,
 	.get_acl = ecryptfs_get_acl,
 	.set_acl = ecryptfs_set_acl,
+	.get_fscaps = ecryptfs_get_fscaps,
+	.set_fscaps = ecryptfs_set_fscaps,
 };
 
 const struct inode_operations ecryptfs_main_iops = {
@@ -1199,6 +1218,8 @@ const struct inode_operations ecryptfs_main_iops = {
 	.fileattr_set = ecryptfs_fileattr_set,
 	.get_acl = ecryptfs_get_acl,
 	.set_acl = ecryptfs_set_acl,
+	.get_fscaps = ecryptfs_get_fscaps,
+	.set_fscaps = ecryptfs_set_fscaps,
 };
 
 static int ecryptfs_xattr_get(const struct xattr_handler *handler,
