@@ -9,6 +9,7 @@
 #include "internal.h"
 #include <linux/posix_acl_xattr.h>
 #include <linux/xattr.h>
+#include <linux/capability.h>
 
 /* Attribute not found */
 #define ENOATTR         ENODATA
@@ -68,6 +69,13 @@ static inline int erofs_getxattr(struct inode *inode, int index,
 struct posix_acl *erofs_get_acl(struct inode *inode, int type, bool rcu);
 #else
 #define erofs_get_acl	(NULL)
+#endif
+
+#ifdef CONFIG_EROFS_FS_SECURITY
+int erofs_get_fscaps(struct mnt_idmap *idmap, struct dentry *dentry,
+		     struct vfs_caps *caps);
+#else
+#define erofs_get_fscaps (NULL)
 #endif
 
 #endif

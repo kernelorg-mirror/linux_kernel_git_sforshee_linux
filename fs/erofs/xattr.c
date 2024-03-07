@@ -6,6 +6,7 @@
  */
 #include <linux/security.h>
 #include <linux/xxhash.h>
+#include <linux/capability.h>
 #include "xattr.h"
 
 struct erofs_xattr_iter {
@@ -556,5 +557,23 @@ struct posix_acl *erofs_get_acl(struct inode *inode, int type, bool rcu)
 		acl = posix_acl_from_xattr(&init_user_ns, value, rc);
 	kfree(value);
 	return acl;
+}
+#endif
+
+#ifdef CONFIG_EROFS_FS_SECURITY
+int erofs_get_fscaps(struct mnt_idmap *idmap, struct dentry *dentry,
+		     struct vfs_caps *caps)
+{
+	struct inode *inode = d_inode(dentry);
+	struct vfs_ns_cap_data nscaps;
+	int size;
+
+	size = erofs_getxattr(inode, EROFS_XATTR_INDEX_SECURITY,
+			      XATTR_CAPS_SUFFIX, &nscaps, sizeof(nscaps));
+	if (size < 0)
+		return size;
+
+	return vfs_caps_from_xattr(idmap, i_user_ns(inode), caps, &nscaps,
+				   size);
 }
 #endif

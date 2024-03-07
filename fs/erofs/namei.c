@@ -220,5 +220,6 @@ const struct inode_operations erofs_dir_iops = {
 	.getattr = erofs_getattr,
 	.listxattr = erofs_listxattr,
 	.get_inode_acl = erofs_get_acl,
+	.get_fscaps = erofs_get_fscaps,
 	.fiemap = erofs_fiemap,
 };

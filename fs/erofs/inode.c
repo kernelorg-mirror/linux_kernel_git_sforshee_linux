@@ -350,6 +350,7 @@ const struct inode_operations erofs_generic_iops = {
 	.getattr = erofs_getattr,
 	.listxattr = erofs_listxattr,
 	.get_inode_acl = erofs_get_acl,
+	.get_fscaps = erofs_get_fscaps,
 	.fiemap = erofs_fiemap,
 };
 
@@ -358,6 +359,7 @@ const struct inode_operations erofs_symlink_iops = {
 	.getattr = erofs_getattr,
 	.listxattr = erofs_listxattr,
 	.get_inode_acl = erofs_get_acl,
+	.get_fscaps = erofs_get_fscaps,
 };
 
 const struct inode_operations erofs_fast_symlink_iops = {
@@ -365,4 +367,5 @@ const struct inode_operations erofs_fast_symlink_iops = {
 	.getattr = erofs_getattr,
 	.listxattr = erofs_listxattr,
 	.get_inode_acl = erofs_get_acl,
+	.get_fscaps = erofs_get_fscaps,
 };
