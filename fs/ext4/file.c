@@ -34,6 +34,7 @@
 #include "ext4_jbd2.h"
 #include "xattr.h"
 #include "acl.h"
+#include "fscaps.h"
 #include "truncate.h"
 
 /*
@@ -957,5 +958,7 @@ const struct inode_operations ext4_file_inode_operations = {
 	.fiemap		= ext4_fiemap,
 	.fileattr_get	= ext4_fileattr_get,
 	.fileattr_set	= ext4_fileattr_set,
+	.set_fscaps	= ext4_set_fscaps,
+	.get_fscaps	= ext4_get_fscaps,
 };
 

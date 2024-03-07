@@ -41,6 +41,7 @@
 
 #include "xattr.h"
 #include "acl.h"
+#include "fscaps.h"
 
 #include <trace/events/ext4.h>
 /*
@@ -4236,6 +4237,8 @@ const struct inode_operations ext4_dir_inode_operations = {
 	.fiemap         = ext4_fiemap,
 	.fileattr_get	= ext4_fileattr_get,
 	.fileattr_set	= ext4_fileattr_set,
+	.set_fscaps	= ext4_set_fscaps,
+	.get_fscaps	= ext4_get_fscaps,
 };
 
 const struct inode_operations ext4_special_inode_operations = {
@@ -4244,4 +4247,6 @@ const struct inode_operations ext4_special_inode_operations = {
 	.listxattr	= ext4_listxattr,
 	.get_inode_acl	= ext4_get_acl,
 	.set_acl	= ext4_set_acl,
+	.set_fscaps	= ext4_set_fscaps,
+	.get_fscaps	= ext4_get_fscaps,
 };

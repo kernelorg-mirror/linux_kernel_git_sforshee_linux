@@ -22,6 +22,7 @@
 #include <linux/namei.h>
 #include "ext4.h"
 #include "xattr.h"
+#include "fscaps.h"
 
 static const char *ext4_encrypted_get_link(struct dentry *dentry,
 					   struct inode *inode,
@@ -119,6 +120,8 @@ const struct inode_operations ext4_encrypted_symlink_inode_operations = {
 	.setattr	= ext4_setattr,
 	.getattr	= ext4_encrypted_symlink_getattr,
 	.listxattr	= ext4_listxattr,
+	.set_fscaps	= ext4_set_fscaps,
+	.get_fscaps	= ext4_get_fscaps,
 };
 
 const struct inode_operations ext4_symlink_inode_operations = {
@@ -126,6 +129,8 @@ const struct inode_operations ext4_symlink_inode_operations = {
 	.setattr	= ext4_setattr,
 	.getattr	= ext4_getattr,
 	.listxattr	= ext4_listxattr,
+	.set_fscaps	= ext4_set_fscaps,
+	.get_fscaps	= ext4_get_fscaps,
 };
 
 const struct inode_operations ext4_fast_symlink_inode_operations = {
@@ -133,4 +138,6 @@ const struct inode_operations ext4_fast_symlink_inode_operations = {
 	.setattr	= ext4_setattr,
 	.getattr	= ext4_getattr,
 	.listxattr	= ext4_listxattr,
+	.set_fscaps	= ext4_set_fscaps,
+	.get_fscaps	= ext4_get_fscaps,
 };
