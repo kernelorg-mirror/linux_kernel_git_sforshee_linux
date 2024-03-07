@@ -29,6 +29,7 @@
 #include "ext2.h"
 #include "xattr.h"
 #include "acl.h"
+#include "fscaps.h"
 #include "trace.h"
 
 #ifdef CONFIG_FS_DAX
@@ -328,4 +329,6 @@ const struct inode_operations ext2_file_inode_operations = {
 	.fiemap		= ext2_fiemap,
 	.fileattr_get	= ext2_fileattr_get,
 	.fileattr_set	= ext2_fileattr_set,
+	.get_fscaps	= ext2_get_fscaps,
+	.set_fscaps	= ext2_set_fscaps,
 };

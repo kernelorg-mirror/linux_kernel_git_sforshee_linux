@@ -13,4 +13,4 @@ CFLAGS_trace.o := -I$(src)
 
 ext2-$(CONFIG_EXT2_FS_XATTR)	 += xattr.o xattr_user.o xattr_trusted.o
 ext2-$(CONFIG_EXT2_FS_POSIX_ACL) += acl.o
-ext2-$(CONFIG_EXT2_FS_SECURITY)	 += xattr_security.o
+ext2-$(CONFIG_EXT2_FS_SECURITY)	 += xattr_security.o fscaps.o

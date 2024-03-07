@@ -36,6 +36,7 @@
 #include "ext2.h"
 #include "xattr.h"
 #include "acl.h"
+#include "fscaps.h"
 
 static inline int ext2_add_nondir(struct dentry *dentry, struct inode *inode)
 {
@@ -421,6 +422,8 @@ const struct inode_operations ext2_dir_inode_operations = {
 	.tmpfile	= ext2_tmpfile,
 	.fileattr_get	= ext2_fileattr_get,
 	.fileattr_set	= ext2_fileattr_set,
+	.get_fscaps	= ext2_get_fscaps,
+	.set_fscaps	= ext2_set_fscaps,
 };
 
 const struct inode_operations ext2_special_inode_operations = {
@@ -429,4 +432,6 @@ const struct inode_operations ext2_special_inode_operations = {
 	.setattr	= ext2_setattr,
 	.get_inode_acl	= ext2_get_acl,
 	.set_acl	= ext2_set_acl,
+	.get_fscaps	= ext2_get_fscaps,
+	.set_fscaps	= ext2_set_fscaps,
 };
