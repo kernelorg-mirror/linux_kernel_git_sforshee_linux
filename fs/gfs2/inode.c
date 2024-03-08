@@ -35,6 +35,7 @@
 #include "util.h"
 #include "super.h"
 #include "glops.h"
+#include "fscaps.h"
 
 static const struct inode_operations gfs2_file_iops;
 static const struct inode_operations gfs2_dir_iops;
@@ -2185,6 +2186,8 @@ static const struct inode_operations gfs2_file_iops = {
 	.update_time = gfs2_update_time,
 	.fileattr_get = gfs2_fileattr_get,
 	.fileattr_set = gfs2_fileattr_set,
+	.get_fscaps = gfs2_get_fscaps,
+	.set_fscaps = gfs2_set_fscaps,
 };
 
 static const struct inode_operations gfs2_dir_iops = {
@@ -2208,6 +2211,8 @@ static const struct inode_operations gfs2_dir_iops = {
 	.atomic_open = gfs2_atomic_open,
 	.fileattr_get = gfs2_fileattr_get,
 	.fileattr_set = gfs2_fileattr_set,
+	.get_fscaps = gfs2_get_fscaps,
+	.set_fscaps = gfs2_set_fscaps,
 };
 
 static const struct inode_operations gfs2_symlink_iops = {
@@ -2217,5 +2222,7 @@ static const struct inode_operations gfs2_symlink_iops = {
 	.getattr = gfs2_getattr,
 	.listxattr = gfs2_listxattr,
 	.fiemap = gfs2_fiemap,
+	.get_fscaps = gfs2_get_fscaps,
+	.set_fscaps = gfs2_set_fscaps,
 };
 
