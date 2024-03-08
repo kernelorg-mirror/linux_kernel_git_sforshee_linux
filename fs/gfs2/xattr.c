@@ -574,8 +574,8 @@ out:
  *
  * Returns: actual size of data on success, -errno on error
  */
-static int __gfs2_xattr_get(struct inode *inode, const char *name,
-			    void *buffer, size_t size, int type)
+int __gfs2_xattr_get(struct inode *inode, const char *name, void *buffer,
+		     size_t size, int type)
 {
 	struct gfs2_inode *ip = GFS2_I(inode);
 	struct gfs2_ea_location el;
