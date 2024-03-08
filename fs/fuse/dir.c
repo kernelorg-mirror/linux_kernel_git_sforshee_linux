@@ -2145,6 +2145,8 @@ static const struct inode_operations fuse_dir_inode_operations = {
 	.set_acl	= fuse_set_acl,
 	.fileattr_get	= fuse_fileattr_get,
 	.fileattr_set	= fuse_fileattr_set,
+	.get_fscaps	= fuse_get_fscaps,
+	.set_fscaps	= fuse_set_fscaps,
 };
 
 static const struct file_operations fuse_dir_operations = {
@@ -2168,6 +2170,8 @@ static const struct inode_operations fuse_common_inode_operations = {
 	.set_acl	= fuse_set_acl,
 	.fileattr_get	= fuse_fileattr_get,
 	.fileattr_set	= fuse_fileattr_set,
+	.get_fscaps	= fuse_get_fscaps,
+	.set_fscaps	= fuse_set_fscaps,
 };
 
 static const struct inode_operations fuse_symlink_inode_operations = {
@@ -2175,6 +2179,8 @@ static const struct inode_operations fuse_symlink_inode_operations = {
 	.get_link	= fuse_get_link,
 	.getattr	= fuse_getattr,
 	.listxattr	= fuse_listxattr,
+	.get_fscaps	= fuse_get_fscaps,
+	.set_fscaps	= fuse_set_fscaps,
 };
 
 void fuse_init_common(struct inode *inode)

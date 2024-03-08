@@ -31,6 +31,7 @@
 #include <linux/pid_namespace.h>
 #include <linux/refcount.h>
 #include <linux/user_namespace.h>
+#include <linux/capability.h>
 
 /** Default max number of pages that can be used in a single read request */
 #define FUSE_DEFAULT_MAX_PAGES_PER_REQ 32
@@ -1352,6 +1353,11 @@ struct posix_acl *fuse_get_acl(struct mnt_idmap *idmap,
 			       struct dentry *dentry, int type);
 int fuse_set_acl(struct mnt_idmap *, struct dentry *dentry,
 		 struct posix_acl *acl, int type);
+
+int fuse_get_fscaps(struct mnt_idmap *idmap, struct dentry *dentry,
+		    struct vfs_caps *caps);
+int fuse_set_fscaps(struct mnt_idmap *idmap, struct dentry *dentry,
+		    const struct vfs_caps *caps, int setxattr_flags);
 
 /* readdir.c */
 int fuse_readdir(struct file *file, struct dir_context *ctx);
