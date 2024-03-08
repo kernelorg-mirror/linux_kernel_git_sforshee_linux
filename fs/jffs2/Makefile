@@ -13,7 +13,7 @@ jffs2-y	+= super.o debug.o
 
 jffs2-$(CONFIG_JFFS2_FS_WRITEBUFFER)	+= wbuf.o
 jffs2-$(CONFIG_JFFS2_FS_XATTR)		+= xattr.o xattr_trusted.o xattr_user.o
-jffs2-$(CONFIG_JFFS2_FS_SECURITY)	+= security.o
+jffs2-$(CONFIG_JFFS2_FS_SECURITY)	+= security.o fscaps.o
 jffs2-$(CONFIG_JFFS2_FS_POSIX_ACL)	+= acl.o
 jffs2-$(CONFIG_JFFS2_RUBIN)	+= compr_rubin.o
 jffs2-$(CONFIG_JFFS2_RTIME)	+= compr_rtime.o

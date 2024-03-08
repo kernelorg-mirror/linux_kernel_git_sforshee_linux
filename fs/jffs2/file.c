@@ -20,6 +20,7 @@
 #include <linux/crc32.h>
 #include <linux/jffs2.h>
 #include "nodelist.h"
+#include "fscaps.h"
 
 static int jffs2_write_end(struct file *filp, struct address_space *mapping,
 			loff_t pos, unsigned len, unsigned copied,
@@ -68,6 +69,8 @@ const struct inode_operations jffs2_file_inode_operations =
 	.set_acl =	jffs2_set_acl,
 	.setattr =	jffs2_setattr,
 	.listxattr =	jffs2_listxattr,
+	.get_fscaps =	jffs2_get_fscaps,
+	.set_fscaps =	jffs2_set_fscaps,
 };
 
 const struct address_space_operations jffs2_file_address_operations =

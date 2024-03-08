@@ -21,6 +21,7 @@
 #include "jffs2_fs_sb.h"
 #include <linux/time.h>
 #include "nodelist.h"
+#include "fscaps.h"
 
 static int jffs2_readdir (struct file *, struct dir_context *);
 
@@ -66,6 +67,8 @@ const struct inode_operations jffs2_dir_inode_operations =
 	.set_acl =	jffs2_set_acl,
 	.setattr =	jffs2_setattr,
 	.listxattr =	jffs2_listxattr,
+	.get_fscaps =	jffs2_get_fscaps,
+	.set_fscaps =	jffs2_set_fscaps,
 };
 
 /***********************************************************************/
