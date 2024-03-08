@@ -7,16 +7,21 @@
 #include "jfs_incore.h"
 #include "jfs_inode.h"
 #include "jfs_xattr.h"
+#include "jfs_fscaps.h"
 
 const struct inode_operations jfs_fast_symlink_inode_operations = {
 	.get_link	= simple_get_link,
 	.setattr	= jfs_setattr,
 	.listxattr	= jfs_listxattr,
+	.get_fscaps	= jfs_get_fscaps,
+	.set_fscaps	= jfs_set_fscaps,
 };
 
 const struct inode_operations jfs_symlink_inode_operations = {
 	.get_link	= page_get_link,
 	.setattr	= jfs_setattr,
 	.listxattr	= jfs_listxattr,
+	.get_fscaps	= jfs_get_fscaps,
+	.set_fscaps	= jfs_set_fscaps,
 };
 

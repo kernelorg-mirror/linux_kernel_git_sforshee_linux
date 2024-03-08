@@ -19,6 +19,7 @@
 #include "jfs_xattr.h"
 #include "jfs_acl.h"
 #include "jfs_debug.h"
+#include "jfs_fscaps.h"
 
 /*
  * forward references
@@ -1535,6 +1536,8 @@ const struct inode_operations jfs_dir_inode_operations = {
 	.get_inode_acl	= jfs_get_acl,
 	.set_acl	= jfs_set_acl,
 #endif
+	.get_fscaps	= jfs_get_fscaps,
+	.set_fscaps	= jfs_set_fscaps,
 };
 
 WRAP_DIR_ITER(jfs_readdir) // FIXME!

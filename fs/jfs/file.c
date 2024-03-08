@@ -15,6 +15,7 @@
 #include "jfs_xattr.h"
 #include "jfs_acl.h"
 #include "jfs_debug.h"
+#include "jfs_fscaps.h"
 
 int jfs_fsync(struct file *file, loff_t start, loff_t end, int datasync)
 {
@@ -136,6 +137,8 @@ const struct inode_operations jfs_file_inode_operations = {
 	.get_inode_acl	= jfs_get_acl,
 	.set_acl	= jfs_set_acl,
 #endif
+	.get_fscaps	= jfs_get_fscaps,
+	.set_fscaps	= jfs_set_fscaps,
 };
 
 const struct file_operations jfs_file_operations = {
