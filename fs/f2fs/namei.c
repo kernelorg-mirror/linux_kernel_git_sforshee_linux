@@ -20,6 +20,7 @@
 #include "segment.h"
 #include "xattr.h"
 #include "acl.h"
+#include "fscaps.h"
 #include <trace/events/f2fs.h>
 
 static inline bool is_extension_exist(const unsigned char *s, const char *sub,
@@ -1379,6 +1380,8 @@ const struct inode_operations f2fs_encrypted_symlink_inode_operations = {
 	.getattr	= f2fs_encrypted_symlink_getattr,
 	.setattr	= f2fs_setattr,
 	.listxattr	= f2fs_listxattr,
+	.get_fscaps	= f2fs_get_fscaps,
+	.set_fscaps	= f2fs_set_fscaps,
 };
 
 const struct inode_operations f2fs_dir_inode_operations = {
@@ -1400,6 +1403,8 @@ const struct inode_operations f2fs_dir_inode_operations = {
 	.fiemap		= f2fs_fiemap,
 	.fileattr_get	= f2fs_fileattr_get,
 	.fileattr_set	= f2fs_fileattr_set,
+	.get_fscaps	= f2fs_get_fscaps,
+	.set_fscaps	= f2fs_set_fscaps,
 };
 
 const struct inode_operations f2fs_symlink_inode_operations = {
@@ -1407,6 +1412,8 @@ const struct inode_operations f2fs_symlink_inode_operations = {
 	.getattr	= f2fs_getattr,
 	.setattr	= f2fs_setattr,
 	.listxattr	= f2fs_listxattr,
+	.get_fscaps	= f2fs_get_fscaps,
+	.set_fscaps	= f2fs_set_fscaps,
 };
 
 const struct inode_operations f2fs_special_inode_operations = {
@@ -1415,4 +1422,6 @@ const struct inode_operations f2fs_special_inode_operations = {
 	.get_inode_acl	= f2fs_get_acl,
 	.set_acl	= f2fs_set_acl,
 	.listxattr	= f2fs_listxattr,
+	.get_fscaps	= f2fs_get_fscaps,
+	.set_fscaps	= f2fs_set_fscaps,
 };

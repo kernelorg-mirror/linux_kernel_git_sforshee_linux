@@ -33,6 +33,7 @@
 #include "acl.h"
 #include "gc.h"
 #include "iostat.h"
+#include "fscaps.h"
 #include <trace/events/f2fs.h>
 #include <uapi/linux/f2fs.h>
 
@@ -1058,6 +1059,8 @@ const struct inode_operations f2fs_file_inode_operations = {
 	.fiemap		= f2fs_fiemap,
 	.fileattr_get	= f2fs_fileattr_get,
 	.fileattr_set	= f2fs_fileattr_set,
+	.get_fscaps	= f2fs_get_fscaps,
+	.set_fscaps	= f2fs_set_fscaps,
 };
 
 static int fill_zero(struct inode *inode, pgoff_t index,
