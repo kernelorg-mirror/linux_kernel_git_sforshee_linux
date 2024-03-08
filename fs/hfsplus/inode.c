@@ -22,6 +22,7 @@
 #include "hfsplus_fs.h"
 #include "hfsplus_raw.h"
 #include "xattr.h"
+#include "fscaps.h"
 
 static int hfsplus_read_folio(struct file *file, struct folio *folio)
 {
@@ -361,6 +362,8 @@ static const struct inode_operations hfsplus_file_inode_operations = {
 	.listxattr	= hfsplus_listxattr,
 	.fileattr_get	= hfsplus_fileattr_get,
 	.fileattr_set	= hfsplus_fileattr_set,
+	.get_fscaps	= hfsplus_get_fscaps,
+	.set_fscaps	= hfsplus_set_fscaps,
 };
 
 static const struct file_operations hfsplus_file_operations = {

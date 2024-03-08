@@ -18,6 +18,7 @@
 #include "hfsplus_fs.h"
 #include "hfsplus_raw.h"
 #include "xattr.h"
+#include "fscaps.h"
 
 static inline void hfsplus_instantiate(struct dentry *dentry,
 				       struct inode *inode, u32 cnid)
@@ -571,6 +572,8 @@ const struct inode_operations hfsplus_dir_inode_operations = {
 	.listxattr		= hfsplus_listxattr,
 	.fileattr_get		= hfsplus_fileattr_get,
 	.fileattr_set		= hfsplus_fileattr_set,
+	.get_fscaps		= hfsplus_get_fscaps,
+	.set_fscaps		= hfsplus_set_fscaps,
 };
 
 const struct file_operations hfsplus_dir_operations = {
