@@ -48,6 +48,7 @@
 #include "journal.h"
 #include "symlink.h"
 #include "xattr.h"
+#include "fscaps.h"
 
 #include "buffer_head_io.h"
 
@@ -91,4 +92,6 @@ const struct inode_operations ocfs2_symlink_inode_operations = {
 	.setattr	= ocfs2_setattr,
 	.listxattr	= ocfs2_listxattr,
 	.fiemap		= ocfs2_fiemap,
+	.get_fscaps	= ocfs2_get_fscaps,
+	.set_fscaps	= ocfs2_set_fscaps,
 };

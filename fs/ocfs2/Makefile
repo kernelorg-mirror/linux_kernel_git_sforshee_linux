@@ -41,7 +41,8 @@ ocfs2-objs := \
 	quota_global.o		\
 	xattr.o			\
 	acl.o	\
-	filecheck.o
+	filecheck.o		\
+	fscaps.o
 
 ocfs2_stackglue-objs := stackglue.o
 ocfs2_stack_o2cb-objs := stack_o2cb.o

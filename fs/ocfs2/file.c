@@ -46,6 +46,7 @@
 #include "quota.h"
 #include "refcounttree.h"
 #include "ocfs2_trace.h"
+#include "fscaps.h"
 
 #include "buffer_head_io.h"
 
@@ -2758,6 +2759,8 @@ const struct inode_operations ocfs2_file_iops = {
 	.set_acl	= ocfs2_iop_set_acl,
 	.fileattr_get	= ocfs2_fileattr_get,
 	.fileattr_set	= ocfs2_fileattr_set,
+	.get_fscaps	= ocfs2_get_fscaps,
+	.set_fscaps	= ocfs2_set_fscaps,
 };
 
 const struct inode_operations ocfs2_special_file_iops = {
@@ -2767,6 +2770,8 @@ const struct inode_operations ocfs2_special_file_iops = {
 	.permission	= ocfs2_permission,
 	.get_inode_acl	= ocfs2_iop_get_acl,
 	.set_acl	= ocfs2_iop_set_acl,
+	.get_fscaps	= ocfs2_get_fscaps,
+	.set_fscaps	= ocfs2_set_fscaps,
 };
 
 /*

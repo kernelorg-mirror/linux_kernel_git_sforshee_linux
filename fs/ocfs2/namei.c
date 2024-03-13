@@ -49,6 +49,7 @@
 #include "acl.h"
 #include "ocfs2_trace.h"
 #include "ioctl.h"
+#include "fscaps.h"
 
 #include "buffer_head_io.h"
 
@@ -2936,4 +2937,6 @@ const struct inode_operations ocfs2_dir_iops = {
 	.set_acl	= ocfs2_iop_set_acl,
 	.fileattr_get	= ocfs2_fileattr_get,
 	.fileattr_set	= ocfs2_fileattr_set,
+	.get_fscaps	= ocfs2_get_fscaps,
+	.set_fscaps	= ocfs2_set_fscaps,
 };
