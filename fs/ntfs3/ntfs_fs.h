@@ -25,6 +25,7 @@
 #include <linux/time64.h>
 #include <linux/types.h>
 #include <linux/uidgid.h>
+#include <linux/capability.h>
 #include <asm/div64.h>
 #include <asm/page.h>
 
@@ -878,6 +879,11 @@ int ntfs_init_acl(struct mnt_idmap *idmap, struct inode *inode,
 int ntfs_acl_chmod(struct mnt_idmap *idmap, struct dentry *dentry);
 ssize_t ntfs_listxattr(struct dentry *dentry, char *buffer, size_t size);
 extern const struct xattr_handler *const ntfs_xattr_handlers[];
+
+int ntfs_get_fscaps(struct mnt_idmap *idmap, struct dentry *dentry,
+		    struct vfs_caps *caps);
+int ntfs_set_fscaps(struct mnt_idmap *idmap, struct dentry *dentry,
+		    const struct vfs_caps *caps, int setxattr_flags);
 
 int ntfs_save_wsl_perm(struct inode *inode, __le16 *ea_size);
 void ntfs_get_wsl_perm(struct inode *inode);

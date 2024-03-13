@@ -9,6 +9,7 @@
 #include <linux/posix_acl.h>
 #include <linux/posix_acl_xattr.h>
 #include <linux/xattr.h>
+#include <linux/capability.h>
 
 #include "debug.h"
 #include "ntfs.h"
@@ -935,6 +936,47 @@ set_new_fa:
 			  NULL);
 
 out:
+	inode_set_ctime_current(inode);
+	mark_inode_dirty(inode);
+
+	return err;
+}
+
+int ntfs_get_fscaps(struct mnt_idmap *idmap, struct dentry *dentry,
+		    struct vfs_caps *caps)
+{
+	struct inode *inode = d_inode(dentry);
+	struct vfs_ns_cap_data nscaps;
+	int size;
+
+	size = ntfs_get_ea(inode, XATTR_NAME_CAPS, strlen(XATTR_NAME_CAPS),
+			   &nscaps, sizeof(nscaps), NULL);
+	if (size < 0)
+		return size;
+
+	return vfs_caps_from_xattr(&nop_mnt_idmap, i_user_ns(inode), caps,
+				   &nscaps, sizeof(nscaps));
+}
+
+int ntfs_set_fscaps(struct mnt_idmap *idmap, struct dentry *dentry,
+		    const struct vfs_caps *caps, int setxattr_flags)
+{
+	struct inode *inode = d_inode(dentry);
+	struct vfs_ns_cap_data nscaps, *value = NULL;
+	ssize_t size = 0;
+	int err;
+
+	if (caps) {
+		value = &nscaps;
+		size = vfs_caps_to_xattr(&nop_mnt_idmap, i_user_ns(inode), caps,
+					 value, sizeof(*value));
+		if (size < 0)
+			return size;
+	}
+
+	err = ntfs_set_ea(inode, XATTR_NAME_CAPS, strlen(XATTR_NAME_CAPS),
+			  value, size, setxattr_flags, 0, NULL);
+
 	inode_set_ctime_current(inode);
 	mark_inode_dirty(inode);
 

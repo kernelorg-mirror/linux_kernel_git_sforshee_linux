@@ -1218,6 +1218,8 @@ const struct inode_operations ntfs_file_inode_operations = {
 	.get_acl	= ntfs_get_acl,
 	.set_acl	= ntfs_set_acl,
 	.fiemap		= ntfs_fiemap,
+	.get_fscaps	= ntfs_get_fscaps,
+	.set_fscaps	= ntfs_set_fscaps,
 };
 
 const struct file_operations ntfs_file_operations = {

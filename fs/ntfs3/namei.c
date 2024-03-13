@@ -614,6 +614,8 @@ const struct inode_operations ntfs_dir_inode_operations = {
 	.listxattr	= ntfs_listxattr,
 	.atomic_open	= ntfs_atomic_open,
 	.fiemap		= ntfs_fiemap,
+	.get_fscaps	= ntfs_get_fscaps,
+	.set_fscaps	= ntfs_set_fscaps,
 };
 
 const struct inode_operations ntfs_special_inode_operations = {
@@ -622,6 +624,8 @@ const struct inode_operations ntfs_special_inode_operations = {
 	.listxattr	= ntfs_listxattr,
 	.get_acl	= ntfs_get_acl,
 	.set_acl	= ntfs_set_acl,
+	.get_fscaps	= ntfs_get_fscaps,
+	.set_fscaps	= ntfs_set_fscaps,
 };
 
 const struct dentry_operations ntfs_dentry_ops = {

@@ -2097,6 +2097,8 @@ const struct inode_operations ntfs_link_inode_operations = {
 	.get_link	= ntfs_get_link,
 	.setattr	= ntfs3_setattr,
 	.listxattr	= ntfs_listxattr,
+	.get_fscaps	= ntfs_get_fscaps,
+	.set_fscaps	= ntfs_set_fscaps,
 };
 
 const struct address_space_operations ntfs_aops = {
