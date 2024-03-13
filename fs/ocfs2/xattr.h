@@ -33,6 +33,8 @@ extern const struct xattr_handler ocfs2_xattr_security_handler;
 extern const struct xattr_handler * const ocfs2_xattr_handlers[];
 
 ssize_t ocfs2_listxattr(struct dentry *, char *, size_t);
+int ocfs2_xattr_get(struct inode *inode, int name_index, const char *name,
+		    void *buffer, size_t buffer_size);
 int ocfs2_xattr_get_nolock(struct inode *, struct buffer_head *, int,
 			   const char *, void *, size_t);
 int ocfs2_xattr_set(struct inode *, int, const char *, const void *,

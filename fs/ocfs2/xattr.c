@@ -1311,11 +1311,11 @@ int ocfs2_xattr_get_nolock(struct inode *inode,
  * Copy an extended attribute into the buffer provided.
  * Buffer is NULL to compute the size of buffer required.
  */
-static int ocfs2_xattr_get(struct inode *inode,
-			   int name_index,
-			   const char *name,
-			   void *buffer,
-			   size_t buffer_size)
+int ocfs2_xattr_get(struct inode *inode,
+		    int name_index,
+		    const char *name,
+		    void *buffer,
+		    size_t buffer_size)
 {
 	int ret, had_lock;
 	struct buffer_head *di_bh = NULL;
