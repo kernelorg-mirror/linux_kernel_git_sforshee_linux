@@ -132,8 +132,8 @@ void bch2_xattr_to_text(struct printbuf *out, struct bch_fs *c,
 	}
 }
 
-static int bch2_xattr_get_trans(struct btree_trans *trans, struct bch_inode_info *inode,
-				const char *name, void *buffer, size_t size, int type)
+int bch2_xattr_get_trans(struct btree_trans *trans, struct bch_inode_info *inode,
+			 const char *name, void *buffer, size_t size, int type)
 {
 	struct bch_hash_info hash = bch2_hash_info_init(trans->c, &inode->ei_inode);
 	struct xattr_search_key search = X_SEARCH(type, name, strlen(name));
