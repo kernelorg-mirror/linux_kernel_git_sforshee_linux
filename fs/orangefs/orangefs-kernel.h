@@ -52,6 +52,7 @@
 #include <linux/xattr.h>
 #include <linux/exportfs.h>
 #include <linux/hashtable.h>
+#include <linux/capability.h>
 
 #include <asm/unaligned.h>
 
@@ -421,6 +422,11 @@ int orangefs_inode_setattr(struct inode *inode);
 bool orangefs_cancel_op_in_progress(struct orangefs_kernel_op_s *op);
 
 int orangefs_normalize_to_errno(__s32 error_code);
+
+int orangefs_get_fscaps(struct mnt_idmap *idmap, struct dentry *dentry,
+			struct vfs_caps *caps);
+int orangefs_set_fscaps(struct mnt_idmap *idmap, struct dentry *dentry,
+			const struct vfs_caps *caps, int setxattr_flags);
 
 extern struct mutex orangefs_request_mutex;
 extern int op_timeout_secs;

@@ -443,4 +443,6 @@ const struct inode_operations orangefs_dir_inode_operations = {
 	.listxattr = orangefs_listxattr,
 	.permission = orangefs_permission,
 	.update_time = orangefs_update_time,
+	.get_fscaps = orangefs_get_fscaps,
+	.set_fscaps = orangefs_set_fscaps,
 };

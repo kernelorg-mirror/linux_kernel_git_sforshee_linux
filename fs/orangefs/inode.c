@@ -975,6 +975,8 @@ static const struct inode_operations orangefs_file_inode_operations = {
 	.update_time = orangefs_update_time,
 	.fileattr_get = orangefs_fileattr_get,
 	.fileattr_set = orangefs_fileattr_set,
+	.get_fscaps = orangefs_get_fscaps,
+	.set_fscaps = orangefs_set_fscaps,
 };
 
 static int orangefs_init_iops(struct inode *inode)
