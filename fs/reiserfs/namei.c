@@ -17,6 +17,7 @@
 #include "reiserfs.h"
 #include "acl.h"
 #include "xattr.h"
+#include "fscaps.h"
 #include <linux/quotaops.h>
 
 #define INC_DIR_INODE_NLINK(i) if (i->i_nlink != 1) { inc_nlink(i); if (i->i_nlink >= REISERFS_LINK_MAX) set_nlink(i, 1); }
@@ -1700,6 +1701,8 @@ const struct inode_operations reiserfs_dir_inode_operations = {
 	.set_acl = reiserfs_set_acl,
 	.fileattr_get = reiserfs_fileattr_get,
 	.fileattr_set = reiserfs_fileattr_set,
+	.get_fscaps = reiserfs_get_fscaps,
+	.set_fscaps = reiserfs_set_fscaps,
 };
 
 /*
@@ -1711,6 +1714,8 @@ const struct inode_operations reiserfs_symlink_inode_operations = {
 	.setattr = reiserfs_setattr,
 	.listxattr = reiserfs_listxattr,
 	.permission = reiserfs_permission,
+	.get_fscaps = reiserfs_get_fscaps,
+	.set_fscaps = reiserfs_set_fscaps,
 };
 
 /*
@@ -1722,4 +1727,6 @@ const struct inode_operations reiserfs_special_inode_operations = {
 	.permission = reiserfs_permission,
 	.get_inode_acl = reiserfs_get_acl,
 	.set_acl = reiserfs_set_acl,
+	.get_fscaps = reiserfs_get_fscaps,
+	.set_fscaps = reiserfs_set_fscaps,
 };

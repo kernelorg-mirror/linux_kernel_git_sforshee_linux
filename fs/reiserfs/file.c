@@ -6,6 +6,7 @@
 #include "reiserfs.h"
 #include "acl.h"
 #include "xattr.h"
+#include "fscaps.h"
 #include <linux/uaccess.h>
 #include <linux/pagemap.h>
 #include <linux/swap.h>
@@ -260,6 +261,8 @@ const struct inode_operations reiserfs_file_inode_operations = {
 	.set_acl = reiserfs_set_acl,
 	.fileattr_get = reiserfs_fileattr_get,
 	.fileattr_set = reiserfs_fileattr_set,
+	.get_fscaps = reiserfs_get_fscaps,
+	.set_fscaps = reiserfs_set_fscaps,
 };
 
 const struct inode_operations reiserfs_priv_file_inode_operations = {

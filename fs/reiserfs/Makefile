@@ -19,7 +19,7 @@ reiserfs-objs += xattr_user.o xattr_trusted.o
 endif
 
 ifeq ($(CONFIG_REISERFS_FS_SECURITY),y)
-reiserfs-objs += xattr_security.o
+reiserfs-objs += xattr_security.o xattr_fscaps.o
 endif
 
 ifeq ($(CONFIG_REISERFS_FS_POSIX_ACL),y)
