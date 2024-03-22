@@ -13,6 +13,8 @@ extern __le64 *squashfs_read_xattr_id_table(struct super_block *, u64,
 		u64 *, unsigned int *);
 extern int squashfs_xattr_lookup(struct super_block *, unsigned int, int *,
 		unsigned int *, unsigned long long *);
+int squashfs_get_fscaps(struct mnt_idmap *idmap, struct dentry *dentry,
+			struct vfs_caps *caps);
 #else
 static inline __le64 *squashfs_read_xattr_id_table(struct super_block *sb,
 		u64 start, u64 *xattr_table_start, unsigned int *xattr_ids)
@@ -38,4 +40,5 @@ static inline int squashfs_xattr_lookup(struct super_block *sb,
 }
 #define squashfs_listxattr NULL
 #define squashfs_xattr_handlers NULL
+#define squashfs_get_fscaps NULL
 #endif

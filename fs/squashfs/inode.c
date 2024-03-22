@@ -412,6 +412,7 @@ failed_read:
 
 
 const struct inode_operations squashfs_inode_ops = {
-	.listxattr = squashfs_listxattr
+	.listxattr = squashfs_listxattr,
+	.get_fscaps = squashfs_get_fscaps,
 };
 

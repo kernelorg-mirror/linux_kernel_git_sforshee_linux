@@ -20,6 +20,7 @@
 #include "squashfs_fs_sb.h"
 #include "squashfs_fs_i.h"
 #include "squashfs.h"
+#include "xattr.h"
 
 static const struct xattr_handler *squashfs_xattr_handler(int);
 
@@ -269,3 +270,18 @@ const struct xattr_handler * const squashfs_xattr_handlers[] = {
 	NULL
 };
 
+int squashfs_get_fscaps(struct mnt_idmap *idmap, struct dentry *dentry,
+			struct vfs_caps *caps)
+{
+	struct inode *inode = d_inode(dentry);
+	struct vfs_ns_cap_data nscaps;
+	int size;
+
+	size = squashfs_xattr_get(inode, SQUASHFS_XATTR_SECURITY,
+				  XATTR_CAPS_SUFFIX, &nscaps, sizeof(nscaps));
+	if (size < 0)
+		return size;
+
+	return vfs_caps_from_xattr(idmap, i_user_ns(inode), caps, &nscaps,
+				   size);
+}

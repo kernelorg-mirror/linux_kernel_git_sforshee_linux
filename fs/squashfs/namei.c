@@ -234,5 +234,6 @@ failed:
 
 const struct inode_operations squashfs_dir_inode_ops = {
 	.lookup = squashfs_lookup,
-	.listxattr = squashfs_listxattr
+	.listxattr = squashfs_listxattr,
+	.get_fscaps = squashfs_get_fscaps,
 };

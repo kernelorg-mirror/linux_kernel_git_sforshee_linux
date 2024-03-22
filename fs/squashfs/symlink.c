@@ -107,6 +107,7 @@ const struct address_space_operations squashfs_symlink_aops = {
 
 const struct inode_operations squashfs_symlink_inode_ops = {
 	.get_link = page_get_link,
-	.listxattr = squashfs_listxattr
+	.listxattr = squashfs_listxattr,
+	.get_fscaps = squashfs_get_fscaps,
 };
 
