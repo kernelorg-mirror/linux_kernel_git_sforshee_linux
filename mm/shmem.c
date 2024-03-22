@@ -80,6 +80,7 @@ static struct vfsmount *shm_mnt __ro_after_init;
 #include <linux/uuid.h>
 #include <linux/quotaops.h>
 #include <linux/rcupdate_wait.h>
+#include <linux/capability.h>
 
 #include <linux/uaccess.h>
 
@@ -3749,7 +3750,7 @@ static int shmem_xattr_handler_get(const struct xattr_handler *handler,
 				   const char *name, void *buffer, size_t size)
 {
 	name = xattr_full_name(handler, name);
-	return shmem_xattr_set(inode, name, buffer, size);
+	return shmem_xattr_get(inode, name, buffer, size);
 }
 
 static int shmem_xattr_handler_set(const struct xattr_handler *handler,
@@ -3793,6 +3794,40 @@ static ssize_t shmem_listxattr(struct dentry *dentry, char *buffer, size_t size)
 	return simple_xattr_list(d_inode(dentry), &info->xattrs, buffer, size);
 }
 
+
+static int shmem_get_fscaps(struct mnt_idmap *idmap, struct dentry *dentry,
+			    struct vfs_caps *caps)
+{
+	struct inode *inode = d_inode(dentry);
+	struct vfs_ns_cap_data nscaps;
+	int size;
+
+	size = shmem_xattr_get(inode, XATTR_NAME_CAPS, &nscaps, sizeof(nscaps));
+	if (size < 0)
+		return size;
+
+	return vfs_caps_from_xattr(idmap, i_user_ns(inode), caps, &nscaps,
+				   size);
+}
+
+static int shmem_set_fscaps(struct mnt_idmap *idmap, struct dentry *dentry,
+			    const struct vfs_caps *caps, int setxattr_flags)
+{
+	struct inode *inode = d_inode(dentry);
+	struct vfs_ns_cap_data nscaps, *value = NULL;
+	ssize_t size = 0;
+
+	if (caps) {
+		value = &nscaps;
+		size = vfs_caps_to_xattr(idmap, i_user_ns(inode), caps, value,
+					 sizeof(*value));
+		if (size < 0)
+			return size;
+	}
+
+	return shmem_xattr_set(inode, XATTR_NAME_CAPS, value, size,
+			       setxattr_flags);
+}
 #endif /* CONFIG_TMPFS_XATTR */
 
 static const struct inode_operations shmem_short_symlink_operations = {
@@ -3801,6 +3836,8 @@ static const struct inode_operations shmem_short_symlink_operations = {
 	.get_link	= simple_get_link,
 #ifdef CONFIG_TMPFS_XATTR
 	.listxattr	= shmem_listxattr,
+	.get_fscaps	= shmem_get_fscaps,
+	.set_fscaps	= shmem_set_fscaps,
 #endif
 };
 
@@ -3810,6 +3847,8 @@ static const struct inode_operations shmem_symlink_inode_operations = {
 	.get_link	= shmem_get_link,
 #ifdef CONFIG_TMPFS_XATTR
 	.listxattr	= shmem_listxattr,
+	.get_fscaps	= shmem_get_fscaps,
+	.set_fscaps	= shmem_set_fscaps,
 #endif
 };
 
@@ -4567,6 +4606,8 @@ static const struct inode_operations shmem_inode_operations = {
 	.set_acl	= simple_set_acl,
 	.fileattr_get	= shmem_fileattr_get,
 	.fileattr_set	= shmem_fileattr_set,
+	.get_fscaps	= shmem_get_fscaps,
+	.set_fscaps	= shmem_set_fscaps,
 #endif
 };
 
@@ -4589,6 +4630,8 @@ static const struct inode_operations shmem_dir_inode_operations = {
 	.listxattr	= shmem_listxattr,
 	.fileattr_get	= shmem_fileattr_get,
 	.fileattr_set	= shmem_fileattr_set,
+	.get_fscaps	= shmem_get_fscaps,
+	.set_fscaps	= shmem_set_fscaps,
 #endif
 #ifdef CONFIG_TMPFS_POSIX_ACL
 	.setattr	= shmem_setattr,
@@ -4600,6 +4643,8 @@ static const struct inode_operations shmem_special_inode_operations = {
 	.getattr	= shmem_getattr,
 #ifdef CONFIG_TMPFS_XATTR
 	.listxattr	= shmem_listxattr,
+	.get_fscaps	= shmem_get_fscaps,
+	.set_fscaps	= shmem_set_fscaps,
 #endif
 #ifdef CONFIG_TMPFS_POSIX_ACL
 	.setattr	= shmem_setattr,
