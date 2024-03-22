@@ -1663,6 +1663,8 @@ const struct inode_operations ubifs_file_inode_operations = {
 	.update_time = ubifs_update_time,
 	.fileattr_get = ubifs_fileattr_get,
 	.fileattr_set = ubifs_fileattr_set,
+	.get_fscaps  = ubifs_get_fscaps,
+	.set_fscaps  = ubifs_set_fscaps,
 };
 
 const struct inode_operations ubifs_symlink_inode_operations = {
@@ -1671,6 +1673,8 @@ const struct inode_operations ubifs_symlink_inode_operations = {
 	.getattr     = ubifs_symlink_getattr,
 	.listxattr   = ubifs_listxattr,
 	.update_time = ubifs_update_time,
+	.get_fscaps  = ubifs_get_fscaps,
+	.set_fscaps  = ubifs_set_fscaps,
 };
 
 const struct file_operations ubifs_file_operations = {

@@ -2075,6 +2075,17 @@ static inline int ubifs_init_security(struct inode *dentry,
 }
 #endif
 
+/* fscaps.c */
+#ifdef CONFIG_UBIFS_FS_SECURITY
+int ubifs_get_fscaps(struct mnt_idmap *idmap, struct dentry *dentry,
+		     struct vfs_caps *caps);
+int ubifs_set_fscaps(struct mnt_idmap *idmap, struct dentry *dentry,
+		     const struct vfs_caps *caps, int setxattr_flags);
+#else
+#define ubifs_get_fscaps NULL
+#define ubifs_set_fscaps NULL
+#endif
+
 
 /* super.c */
 struct inode *ubifs_iget(struct super_block *sb, unsigned long inum);

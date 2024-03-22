@@ -1714,6 +1714,8 @@ const struct inode_operations ubifs_dir_inode_operations = {
 	.tmpfile     = ubifs_tmpfile,
 	.fileattr_get = ubifs_fileattr_get,
 	.fileattr_set = ubifs_fileattr_set,
+	.get_fscaps  = ubifs_get_fscaps,
+	.set_fscaps  = ubifs_set_fscaps,
 };
 
 const struct file_operations ubifs_dir_operations = {
