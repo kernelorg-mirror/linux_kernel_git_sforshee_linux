@@ -592,7 +592,7 @@ void ubifs_evict_xattr_inode(struct ubifs_info *c, ino_t xattr_inum)
 	}
 }
 
-static int ubifs_xattr_remove(struct inode *host, const char *name)
+int ubifs_xattr_remove(struct inode *host, const char *name)
 {
 	struct inode *inode;
 	struct ubifs_info *c = host->i_sb->s_fs_info;
