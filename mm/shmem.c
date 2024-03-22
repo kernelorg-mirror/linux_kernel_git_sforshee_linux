@@ -3698,28 +3698,21 @@ static int shmem_initxattrs(struct inode *inode,
 	return 0;
 }
 
-static int shmem_xattr_handler_get(const struct xattr_handler *handler,
-				   struct dentry *unused, struct inode *inode,
-				   const char *name, void *buffer, size_t size)
+static int shmem_xattr_get(struct inode *inode, const char *name, void *buffer,
+			   size_t size)
 {
 	struct shmem_inode_info *info = SHMEM_I(inode);
-
-	name = xattr_full_name(handler, name);
 	return simple_xattr_get(&info->xattrs, name, buffer, size);
 }
 
-static int shmem_xattr_handler_set(const struct xattr_handler *handler,
-				   struct mnt_idmap *idmap,
-				   struct dentry *unused, struct inode *inode,
-				   const char *name, const void *value,
-				   size_t size, int flags)
+static int shmem_xattr_set(struct inode *inode, const char *name,
+			   const void *value, size_t size, int flags)
 {
 	struct shmem_inode_info *info = SHMEM_I(inode);
 	struct shmem_sb_info *sbinfo = SHMEM_SB(inode->i_sb);
 	struct simple_xattr *old_xattr;
 	size_t ispace = 0;
 
-	name = xattr_full_name(handler, name);
 	if (value && sbinfo->max_inodes) {
 		ispace = simple_xattr_space(name, size);
 		raw_spin_lock(&sbinfo->stat_lock);
@@ -3749,6 +3742,24 @@ static int shmem_xattr_handler_set(const struct xattr_handler *handler,
 		raw_spin_unlock(&sbinfo->stat_lock);
 	}
 	return PTR_ERR(old_xattr);
+}
+
+static int shmem_xattr_handler_get(const struct xattr_handler *handler,
+				   struct dentry *unused, struct inode *inode,
+				   const char *name, void *buffer, size_t size)
+{
+	name = xattr_full_name(handler, name);
+	return shmem_xattr_set(inode, name, buffer, size);
+}
+
+static int shmem_xattr_handler_set(const struct xattr_handler *handler,
+				   struct mnt_idmap *idmap,
+				   struct dentry *unused, struct inode *inode,
+				   const char *name, const void *value,
+				   size_t size, int flags)
+{
+	name = xattr_full_name(handler, name);
+	return shmem_xattr_set(inode, name, value, size, flags);
 }
 
 static const struct xattr_handler shmem_security_xattr_handler = {
@@ -3781,6 +3792,7 @@ static ssize_t shmem_listxattr(struct dentry *dentry, char *buffer, size_t size)
 	struct shmem_inode_info *info = SHMEM_I(d_inode(dentry));
 	return simple_xattr_list(d_inode(dentry), &info->xattrs, buffer, size);
 }
+
 #endif /* CONFIG_TMPFS_XATTR */
 
 static const struct inode_operations shmem_short_symlink_operations = {
