@@ -807,12 +807,28 @@ static int ima_inode_remove_acl(struct mnt_idmap *idmap, struct dentry *dentry,
 	return ima_inode_set_acl(idmap, dentry, acl_name, NULL);
 }
 
+static int ima_inode_set_fscaps(struct mnt_idmap *idmap, struct dentry *dentry,
+				const struct vfs_caps *caps, int flags)
+{
+	if (evm_revalidate_status(XATTR_NAME_CAPS))
+		ima_reset_appraise_flags(d_backing_inode(dentry), false);
+	return 0;
+}
+
+static int ima_inode_remove_fscaps(struct mnt_idmap *idmap,
+				   struct dentry *dentry)
+{
+	return ima_inode_set_fscaps(idmap, dentry, NULL, XATTR_REPLACE);
+}
+
 static struct security_hook_list ima_appraise_hooks[] __ro_after_init = {
 	LSM_HOOK_INIT(inode_post_setattr, ima_inode_post_setattr),
 	LSM_HOOK_INIT(inode_setxattr, ima_inode_setxattr),
 	LSM_HOOK_INIT(inode_set_acl, ima_inode_set_acl),
 	LSM_HOOK_INIT(inode_removexattr, ima_inode_removexattr),
 	LSM_HOOK_INIT(inode_remove_acl, ima_inode_remove_acl),
+	LSM_HOOK_INIT(inode_set_fscaps, ima_inode_set_fscaps),
+	LSM_HOOK_INIT(inode_remove_fscaps, ima_inode_remove_fscaps),
 };
 
 void __init init_ima_appraise_lsm(const struct lsm_id *lsmid)
