@@ -139,7 +139,7 @@ static int evm_find_protected_xattrs(struct dentry *dentry)
 		return -EOPNOTSUPP;
 
 	list_for_each_entry_lockless(xattr, &evm_config_xattrnames, list) {
-		error = __vfs_getxattr(dentry, inode, xattr->name, NULL, 0);
+		error = evm_getxattr(dentry, inode, xattr->name, NULL, 0);
 		if (error < 0) {
 			if (error == -ENODATA)
 				continue;
@@ -327,6 +327,63 @@ int evm_protected_xattr_if_enabled(const char *req_xattr_name)
 	return evm_protected_xattr_common(req_xattr_name, true);
 }
 
+int evm_getxattr(struct dentry *dentry, struct inode *inode, const char *name,
+		 void *value, size_t size)
+{
+	struct vfs_caps caps;
+	int err;
+
+	if (!is_fscaps_xattr(name))
+		return __vfs_getxattr(dentry, inode, name, value, size);
+
+	err = vfs_get_fscaps(&nop_mnt_idmap, dentry, &caps);
+	if (err)
+		return err;
+
+	if (!value)
+		return vfs_caps_xattr_size(&caps);
+
+	return vfs_caps_to_xattr(&nop_mnt_idmap, i_user_ns(inode), &caps,
+				 value, size);
+}
+
+int evm_getxattr_alloc(struct dentry *dentry, const char *name,
+		       char **xattr_value, size_t xattr_size)
+{
+	struct inode *inode = d_backing_inode(dentry);
+	struct vfs_caps caps;
+	struct vfs_ns_cap_data *caps_xattr;
+	ssize_t size;
+	int err;
+
+	/*
+	 * Only fscaps need special handling; use vfs_getxattr_alloc() for
+	 * everything else.
+	 */
+	if (!is_fscaps_xattr(name)) {
+		return vfs_getxattr_alloc(&nop_mnt_idmap, dentry, name,
+					  xattr_value, xattr_size, GFP_NOFS);
+	}
+
+	err = vfs_get_fscaps(&nop_mnt_idmap, dentry, &caps);
+	if (err)
+		return err;
+
+	size = vfs_caps_xattr_size(&caps);
+	caps_xattr = (struct vfs_ns_cap_data *)*xattr_value;
+	if (!caps_xattr || xattr_size < size) {
+		caps_xattr = krealloc(*xattr_value, size, GFP_NOFS);
+		if (!caps_xattr)
+			return -ENOMEM;
+		memset(caps_xattr, 0, size);
+	}
+
+	size = vfs_caps_to_xattr(&nop_mnt_idmap, i_user_ns(inode), &caps,
+				 caps_xattr, size);
+	*xattr_value = (char *)caps_xattr;
+	return size;
+}
+
 /**
  * evm_read_protected_xattrs - read EVM protected xattr names, lengths, values
  * @dentry: dentry of the read xattrs
@@ -348,8 +405,8 @@ int evm_read_protected_xattrs(struct dentry *dentry, u8 *buffer,
 	int rc, size, total_size = 0;
 
 	list_for_each_entry_lockless(xattr, &evm_config_xattrnames, list) {
-		rc = __vfs_getxattr(dentry, d_backing_inode(dentry),
-				    xattr->name, NULL, 0);
+		rc = evm_getxattr(dentry, d_backing_inode(dentry), xattr->name,
+				 NULL, 0);
 		if (rc < 0 && rc == -ENODATA)
 			continue;
 		else if (rc < 0)
@@ -377,7 +434,7 @@ int evm_read_protected_xattrs(struct dentry *dentry, u8 *buffer,
 		case 'v':
 			size = rc;
 			if (buffer) {
-				rc = __vfs_getxattr(dentry,
+				rc = evm_getxattr(dentry,
 					d_backing_inode(dentry), xattr->name,
 					buffer + total_size,
 					buffer_size - total_size);
@@ -461,8 +518,7 @@ static int evm_xattr_change(struct mnt_idmap *idmap,
 	char *xattr_data = NULL;
 	int rc = 0;
 
-	rc = vfs_getxattr_alloc(&nop_mnt_idmap, dentry, xattr_name, &xattr_data,
-				0, GFP_NOFS);
+	rc = evm_getxattr_alloc(dentry, xattr_name, &xattr_data, 0);
 	if (rc < 0) {
 		rc = 1;
 		goto out;

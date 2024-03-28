@@ -66,6 +66,10 @@ struct evm_digest {
 } __packed;
 
 int evm_protected_xattr(const char *req_xattr_name);
+int evm_getxattr(struct dentry *dentry, struct inode *inode, const char *name,
+		 void *value, size_t size);
+int evm_getxattr_alloc(struct dentry *dentry, const char *name,
+		       char **xattr_value, size_t xattr_size);
 
 int evm_init_key(void);
 int evm_update_evmxattr(struct dentry *dentry,

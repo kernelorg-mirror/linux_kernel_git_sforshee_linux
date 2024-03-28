@@ -269,8 +269,8 @@ static int evm_calc_hmac_or_hash(struct dentry *dentry,
 					    req_xattr_value_len);
 			continue;
 		}
-		size = vfs_getxattr_alloc(&nop_mnt_idmap, dentry, xattr->name,
-					  &xattr_value, xattr_size, GFP_NOFS);
+		size = evm_getxattr_alloc(dentry, xattr->name, &xattr_value,
+					  xattr_size);
 		if (size == -ENOMEM) {
 			error = -ENOMEM;
 			goto out;
